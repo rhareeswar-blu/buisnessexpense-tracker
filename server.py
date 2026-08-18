@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 ==============================================================================
-Expense Tracker — Backend Server & SQLite Audit Logging Engine
-Uses Python standard library (http.server, sqlite3, json) - Zero dependencies needed!
+Business Finance & Expense Tracker — Backend Server & SQLite Audit Engine
+Zero external dependencies (Python Standard Library: http.server, sqlite3, json)
 ==============================================================================
 """
 
@@ -16,25 +16,23 @@ from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
 PORT = 5000
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
-STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BASE_DIR, 'database.db')
 
 # ----------------------------------------------------------------------------
-# Database Initialization & Helpers
+# Database Setup & Connection
 # ----------------------------------------------------------------------------
 
 def get_db():
-    """Returns a SQLite database connection with dictionary-like row access."""
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
-    """Initializes the SQLite schema for transactions and change-tracking audit logs."""
     conn = get_db()
     cursor = conn.cursor()
 
-    # Table 1: Transactions (with soft-delete capability)
+    # 1. Transactions Table (Immutable Soft-Deletes: is_deleted = 1, never purged)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS transactions (
             id TEXT PRIMARY KEY,
@@ -45,11 +43,12 @@ def init_db():
             date TEXT NOT NULL,
             created_at TEXT DEFAULT (datetime('now', 'localtime')),
             is_deleted INTEGER DEFAULT 0,
-            deleted_at TEXT DEFAULT NULL
+            deleted_at TEXT DEFAULT NULL,
+            deleted_reason TEXT DEFAULT 'Deleted by user'
         )
     ''')
 
-    # Table 2: Audit Logs (Complete record of all additions, deletions, resets, and restorations)
+    # 2. Immutable Audit Logs Table (Full ledger of all activities)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS audit_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,17 +59,32 @@ def init_db():
         )
     ''')
 
+    # 3. Business Profile Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS business_profile (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            company_name TEXT NOT NULL,
+            tax_id TEXT,
+            currency_symbol TEXT DEFAULT '₹',
+            financial_year TEXT
+        )
+    ''')
+
+    cursor.execute('''
+        INSERT OR IGNORE INTO business_profile (id, company_name, tax_id, currency_symbol, financial_year)
+        VALUES (1, 'Apex Business Solutions Pvt. Ltd.', 'GSTIN: 27AABCU9603R1ZN', '₹', '2026-2027')
+    ''')
+
     conn.commit()
 
-    # Seed sample transactions if table is completely empty
+    # Seed initial business transactions if empty
     cursor.execute('SELECT COUNT(*) as count FROM transactions')
     if cursor.fetchone()['count'] == 0:
-        seed_sample_data(conn)
+        seed_business_sample_data(conn)
 
     conn.close()
 
 def log_audit(conn, action, transaction_id, details_dict):
-    """Records an audit log entry."""
     cursor = conn.cursor()
     details_json = json.dumps(details_dict, ensure_ascii=False)
     cursor.execute('''
@@ -79,17 +93,16 @@ def log_audit(conn, action, transaction_id, details_dict):
     ''', (action, transaction_id, details_json))
     conn.commit()
 
-def seed_sample_data(conn):
-    """Seeds initial sample transactions into the database."""
+def seed_business_sample_data(conn):
     samples = [
-        ('tx_sample_1', 'Monthly Salary Credit', 65000.0, 'income', 'Salary', datetime.now().strftime('%Y-%m-01')),
-        ('tx_sample_2', 'Apartment Rent Payment', 18000.0, 'expense', 'Housing & Rent', datetime.now().strftime('%Y-%m-03')),
-        ('tx_sample_3', 'Freelance Web Design Project', 22000.0, 'income', 'Freelance & Projects', datetime.now().strftime('%Y-%m-05')),
-        ('tx_sample_4', 'Supermarket Grocery Restock', 3450.0, 'expense', 'Groceries', datetime.now().strftime('%Y-%m-08')),
-        ('tx_sample_5', 'Electricity & High-Speed WiFi Bill', 2150.0, 'expense', 'Utilities & Bills', datetime.now().strftime('%Y-%m-10')),
-        ('tx_sample_6', 'Weekend Dining & Cafe', 1680.0, 'expense', 'Food & Dining', datetime.now().strftime('%Y-%m-12')),
-        ('tx_sample_7', 'Stock Market Dividend', 4500.0, 'income', 'Investments & Dividends', datetime.now().strftime('%Y-%m-14')),
-        ('tx_sample_8', 'Fuel & Metro Travel Pass', 1950.0, 'expense', 'Transportation', datetime.now().strftime('%Y-%m-16'))
+        ('tx_b_1', 'Client Retainer — Enterprise Cloud Migration', 185000.0, 'income', 'Client Invoices & Retainers', datetime.now().strftime('%Y-%m-02')),
+        ('tx_b_2', 'Monthly Office Lease & Co-working Space', 45000.0, 'expense', 'Office Rent & Facilities', datetime.now().strftime('%Y-%m-03')),
+        ('tx_b_3', 'Core Engineering & Design Team Payroll', 95000.0, 'expense', 'Salaries & Payroll', datetime.now().strftime('%Y-%m-05')),
+        ('tx_b_4', 'SaaS Consulting & Custom API Integration', 68000.0, 'income', 'Consulting & Services', datetime.now().strftime('%Y-%m-07')),
+        ('tx_b_5', 'AWS Cloud Infrastructure & Server Hosting', 12400.0, 'expense', 'Cloud & Software Tools', datetime.now().strftime('%Y-%m-09')),
+        ('tx_b_6', 'Digital Marketing Campaign & Google Ads', 16500.0, 'expense', 'Marketing & Advertising', datetime.now().strftime('%Y-%m-12')),
+        ('tx_b_7', 'Quarterly High-Yield Corporate Deposit', 8500.0, 'income', 'Investments & Returns', datetime.now().strftime('%Y-%m-14')),
+        ('tx_b_8', 'Office Gigabit Internet & Power Utilities', 4800.0, 'expense', 'Utilities & Internet', datetime.now().strftime('%Y-%m-16'))
     ]
 
     cursor = conn.cursor()
@@ -104,18 +117,17 @@ def seed_sample_data(conn):
             'type': tx[3],
             'category': tx[4],
             'date': tx[5],
-            'note': 'Initial Sample Seed'
+            'note': 'Initial Business Seed'
         })
     conn.commit()
 
 # ----------------------------------------------------------------------------
-# Custom HTTP Request Handler (REST API + Static File Server)
+# HTTP Request Handler & Business API Endpoints
 # ----------------------------------------------------------------------------
 
-class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
+class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
 
     def send_json_response(self, status_code, data):
-        """Helper to send JSON response with standard CORS headers."""
         response_bytes = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -127,22 +139,24 @@ class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(response_bytes)
 
     def do_OPTIONS(self):
-        """Handle CORS preflight requests."""
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
 
-    # ------------------------------------------------------------------------
-    # GET Requests Handler
-    # ------------------------------------------------------------------------
     def do_GET(self):
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
 
-        # 1. API: Get all active (non-deleted) transactions
-        if path == '/api/transactions':
+        # 1. Health Status
+        if path == '/api/health':
+            self.send_json_response(200, {'status': 'online', 'service': 'Business Expense Tracker', 'db': 'SQLite active'})
+            return
+
+        # 2. Get Active Transactions
+        elif path == '/api/transactions':
             conn = get_db()
             cursor = conn.cursor()
             cursor.execute('''
@@ -151,92 +165,150 @@ class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
                 WHERE is_deleted = 0
                 ORDER BY date DESC, created_at DESC
             ''')
-            rows = [dict(row) for row in cursor.fetchall()]
+            rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             self.send_json_response(200, {'status': 'success', 'data': rows})
             return
 
-        # 2. API: Get change-tracking audit logs
-        elif path == '/api/audit-logs':
+        # 3. Get Business Profile
+        elif path == '/api/business-profile':
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM business_profile WHERE id = 1')
+            profile = dict(cursor.fetchone())
+            conn.close()
+            self.send_json_response(200, {'status': 'success', 'data': profile})
+            return
+
+        # 4. Admin API: Full Audit Log Ledger
+        elif path == '/api/admin/audit-logs':
             conn = get_db()
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT id, action, transaction_id, details, timestamp
                 FROM audit_logs
-                ORDER BY timestamp DESC, id DESC
-                LIMIT 100
+                ORDER BY id DESC
+                LIMIT 200
             ''')
             rows = []
-            for row in cursor.fetchall():
-                row_dict = dict(row)
+            for r in cursor.fetchall():
+                item = dict(r)
                 try:
-                    row_dict['details'] = json.loads(row_dict['details'])
+                    item['details'] = json.loads(item['details'])
                 except Exception:
                     pass
-                rows.append(row_dict)
+                rows.append(item)
             conn.close()
             self.send_json_response(200, {'status': 'success', 'data': rows})
             return
 
-        # 3. API: Get only deleted transactions (Trash / History)
-        elif path == '/api/deleted-transactions':
+        # 5. Admin API: Get All Deleted / Archived Transactions (Immutable Trash)
+        elif path == '/api/admin/deleted':
             conn = get_db()
             cursor = conn.cursor()
             cursor.execute('''
-                SELECT id, description, amount, type, category, date, deleted_at
+                SELECT id, description, amount, type, category, date, deleted_at, deleted_reason
                 FROM transactions
                 WHERE is_deleted = 1
                 ORDER BY deleted_at DESC
             ''')
-            rows = [dict(row) for row in cursor.fetchall()]
+            rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             self.send_json_response(200, {'status': 'success', 'data': rows})
             return
 
-        # 4. API: Server Health & Status Check
-        elif path == '/api/health':
-            self.send_json_response(200, {'status': 'online', 'database': 'SQLite connected', 'timestamp': datetime.now().isoformat()})
+        # 6. Admin API: Generate Financial Statement / P&L
+        elif path == '/api/admin/statement':
+            start_date = query.get('start_date', [''])[0]
+            end_date = query.get('end_date', [''])[0]
+
+            conn = get_db()
+            cursor = conn.cursor()
+
+            sql = "SELECT id, description, amount, type, category, date FROM transactions WHERE is_deleted = 0"
+            params = []
+
+            if start_date:
+                sql += " AND date >= ?"
+                params.append(start_date)
+            if end_date:
+                sql += " AND date <= ?"
+                params.append(end_date)
+
+            sql += " ORDER BY date ASC"
+            cursor.execute(sql, params)
+            txs = [dict(r) for r in cursor.fetchall()]
+
+            # Compute Statement Metrics
+            total_revenue = sum(t['amount'] for t in txs if t['type'] == 'income')
+            total_expense = sum(t['amount'] for t in txs if t['type'] == 'expense')
+            net_profit = total_revenue - total_expense
+            profit_margin = round((net_profit / total_revenue * 100), 2) if total_revenue > 0 else 0.0
+
+            # Group by Category
+            revenue_by_cat = {}
+            expense_by_cat = {}
+            for t in txs:
+                cat = t['category']
+                amt = t['amount']
+                if t['type'] == 'income':
+                    revenue_by_cat[cat] = revenue_by_cat.get(cat, 0) + amt
+                else:
+                    expense_by_cat[cat] = expense_by_cat.get(cat, 0) + amt
+
+            cursor.execute('SELECT * FROM business_profile WHERE id = 1')
+            profile = dict(cursor.fetchone())
+            conn.close()
+
+            statement_data = {
+                'profile': profile,
+                'period': {
+                    'start_date': start_date or 'Beginning',
+                    'end_date': end_date or datetime.now().strftime('%Y-%m-%d'),
+                    'generated_at': datetime.now().strftime('%d %b %Y, %I:%M %p')
+                },
+                'summary': {
+                    'total_revenue': total_revenue,
+                    'total_expense': total_expense,
+                    'net_profit': net_profit,
+                    'profit_margin_percent': profit_margin,
+                    'transaction_count': len(txs)
+                },
+                'revenue_breakdown': revenue_by_cat,
+                'expense_breakdown': expense_by_cat,
+                'transactions': txs
+            }
+
+            self.send_json_response(200, {'status': 'success', 'data': statement_data})
             return
 
-        # 5. Static Files Serving (index.html, style.css, script.js, assets)
+        # Serve static assets
         self.serve_static_file(path)
 
-    # ------------------------------------------------------------------------
-    # POST Requests Handler
-    # ------------------------------------------------------------------------
     def do_POST(self):
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
-        content_length = int(self.headers.get('Content-Length', 0))
-        body_data = {}
+        parsed = urlparse(self.path)
+        path = parsed.path
+        length = int(self.headers.get('Content-Length', 0))
+        body = {}
 
-        if content_length > 0:
+        if length > 0:
             try:
-                body_bytes = self.rfile.read(content_length)
-                body_data = json.loads(body_bytes.decode('utf-8'))
+                body = json.loads(self.rfile.read(length).decode('utf-8'))
             except Exception as e:
-                self.send_json_response(400, {'status': 'error', 'message': f'Invalid JSON payload: {str(e)}'})
+                self.send_json_response(400, {'status': 'error', 'message': 'Invalid JSON'})
                 return
 
-        # 1. API: Create New Transaction
+        # 1. Create Transaction
         if path == '/api/transactions':
-            desc = body_data.get('description', '').strip()
-            amount = body_data.get('amount')
-            tx_type = body_data.get('type')
-            category = body_data.get('category')
-            date_str = body_data.get('date')
-            tx_id = body_data.get('id') or f"tx_{int(datetime.now().timestamp()*1000)}"
+            desc = body.get('description', '').strip()
+            amount = body.get('amount')
+            tx_type = body.get('type')
+            category = body.get('category')
+            date_str = body.get('date')
+            tx_id = body.get('id') or f"tx_{int(datetime.now().timestamp()*1000)}"
 
             if not desc or amount is None or not tx_type or not category or not date_str:
                 self.send_json_response(400, {'status': 'error', 'message': 'Missing required fields.'})
-                return
-
-            try:
-                amount = float(amount)
-                if amount <= 0:
-                    raise ValueError("Amount must be positive.")
-            except ValueError:
-                self.send_json_response(400, {'status': 'error', 'message': 'Invalid amount value.'})
                 return
 
             conn = get_db()
@@ -244,27 +316,23 @@ class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
             cursor.execute('''
                 INSERT INTO transactions (id, description, amount, type, category, date, is_deleted)
                 VALUES (?, ?, ?, ?, ?, ?, 0)
-            ''', (tx_id, desc, amount, tx_type, category, date_str))
+            ''', (tx_id, desc, float(amount), tx_type, category, date_str))
 
             log_audit(conn, 'CREATE', tx_id, {
                 'description': desc,
-                'amount': amount,
+                'amount': float(amount),
                 'type': tx_type,
                 'category': category,
                 'date': date_str
             })
             conn.close()
 
-            self.send_json_response(201, {
-                'status': 'success',
-                'message': 'Transaction recorded successfully',
-                'data': {'id': tx_id, 'description': desc, 'amount': amount, 'type': tx_type, 'category': category, 'date': date_str}
-            })
+            self.send_json_response(201, {'status': 'success', 'message': 'Transaction added'})
             return
 
-        # 2. API: Restore a Deleted Transaction
-        elif path.startswith('/api/transactions/restore/'):
-            tx_id = path.replace('/api/transactions/restore/', '').strip()
+        # 2. Restore Deleted Transaction (Soft-delete reversal)
+        elif path.startswith('/api/admin/restore/'):
+            tx_id = path.replace('/api/admin/restore/', '').strip()
             conn = get_db()
             cursor = conn.cursor()
             cursor.execute('SELECT * FROM transactions WHERE id = ?', (tx_id,))
@@ -284,43 +352,46 @@ class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
             })
             conn.close()
 
-            self.send_json_response(200, {'status': 'success', 'message': f'Transaction "{target["description"]}" restored successfully.'})
+            self.send_json_response(200, {'status': 'success', 'message': f'Restored "{target["description"]}"'})
             return
 
-        # 3. API: Reset All Data (Soft delete active data and log reset action)
+        # 3. Update Business Profile
+        elif path == '/api/business-profile':
+            company_name = body.get('company_name', 'Apex Business Solutions')
+            tax_id = body.get('tax_id', '')
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute('UPDATE business_profile SET company_name = ?, tax_id = ? WHERE id = 1', (company_name, tax_id))
+            log_audit(conn, 'PROFILE_UPDATE', None, {'company_name': company_name, 'tax_id': tax_id})
+            conn.close()
+            self.send_json_response(200, {'status': 'success', 'message': 'Profile updated'})
+            return
+
+        # 4. Reset All Active Transactions
         elif path == '/api/reset':
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute('SELECT COUNT(*) as count FROM transactions WHERE is_deleted = 0')
-            active_count = cursor.fetchone()['count']
-
-            cursor.execute('UPDATE transactions SET is_deleted = 1, deleted_at = datetime("now", "localtime") WHERE is_deleted = 0')
-            log_audit(conn, 'RESET', None, {
-                'archived_transactions_count': active_count,
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
+            cursor.execute('UPDATE transactions SET is_deleted = 1, deleted_at = datetime("now", "localtime"), deleted_reason = "Admin Reset" WHERE is_deleted = 0')
+            log_audit(conn, 'RESET', None, {'timestamp': datetime.now().isoformat()})
             conn.close()
-
-            self.send_json_response(200, {'status': 'success', 'message': f'All {active_count} active transactions have been archived.'})
+            self.send_json_response(200, {'status': 'success', 'message': 'All active transactions archived.'})
             return
 
-        # 4. API: Reload Sample Data
+        # 5. Reload Sample Data
         elif path == '/api/sample-data':
             conn = get_db()
-            seed_sample_data(conn)
+            seed_business_sample_data(conn)
             conn.close()
-            self.send_json_response(200, {'status': 'success', 'message': 'Sample dataset loaded successfully.'})
+            self.send_json_response(200, {'status': 'success', 'message': 'Sample dataset loaded.'})
             return
 
-        self.send_json_response(404, {'status': 'error', 'message': 'API route not found.'})
+        self.send_json_response(404, {'status': 'error', 'message': 'Route not found'})
 
-    # ------------------------------------------------------------------------
-    # DELETE Requests Handler (Soft Delete with Audit Log)
-    # ------------------------------------------------------------------------
     def do_DELETE(self):
-        parsed_path = urlparse(self.path)
-        path = parsed_path.path
+        parsed = urlparse(self.path)
+        path = parsed.path
 
+        # Soft Delete (Immutable archive - NO permanent purge)
         if path.startswith('/api/transactions/'):
             tx_id = path.replace('/api/transactions/', '').strip()
             conn = get_db()
@@ -333,10 +404,9 @@ class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(404, {'status': 'error', 'message': 'Active transaction not found.'})
                 return
 
-            # Perform soft-delete and log details
             cursor.execute('''
                 UPDATE transactions
-                SET is_deleted = 1, deleted_at = datetime('now', 'localtime')
+                SET is_deleted = 1, deleted_at = datetime('now', 'localtime'), deleted_reason = 'Deleted via User App'
                 WHERE id = ?
             ''', (tx_id,))
 
@@ -350,43 +420,34 @@ class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
             })
             conn.close()
 
-            self.send_json_response(200, {
-                'status': 'success',
-                'message': f'Transaction "{target["description"]}" deleted and archived in audit log.',
-                'deleted_id': tx_id
-            })
+            self.send_json_response(200, {'status': 'success', 'message': f'Archived "{target["description"]}"'})
             return
 
-        self.send_json_response(404, {'status': 'error', 'message': 'API route not found.'})
+        self.send_json_response(404, {'status': 'error', 'message': 'Route not found'})
 
-    # ------------------------------------------------------------------------
-    # Static Files Delivery
-    # ------------------------------------------------------------------------
     def serve_static_file(self, path):
-        if path == '/' or path == '':
+        if path in ('/', ''):
             path = '/index.html'
 
-        # Sanitize path to prevent directory traversal
         safe_path = os.path.normpath(path.lstrip('/'))
-        full_path = os.path.join(STATIC_DIR, safe_path)
+        full_path = os.path.join(BASE_DIR, safe_path)
 
         if not os.path.exists(full_path) or os.path.isdir(full_path):
             self.send_response(404)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.end_headers()
-            self.wfile.write(b"<h1>404 Not Found</h1><p>The requested file does not exist.</p>")
+            self.wfile.write(b"<h1>404 Not Found</h1>")
             return
 
         mime_type, _ = mimetypes.guess_type(full_path)
-        if mime_type is None:
+        if not mime_type:
             mime_type = 'application/octet-stream'
 
         try:
             with open(full_path, 'rb') as f:
                 content = f.read()
-
             self.send_response(200)
-            self.send_header('Content-Type', f'{mime_type}; charset=utf-8' if 'text' in mime_type or 'json' in mime_type or 'javascript' in mime_type else mime_type)
+            self.send_header('Content-Type', f'{mime_type}; charset=utf-8' if 'text' in mime_type or 'javascript' in mime_type or 'json' in mime_type else mime_type)
             self.send_header('Content-Length', str(len(content)))
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
@@ -394,28 +455,22 @@ class ExpenseTrackerHandler(http.server.BaseHTTPRequestHandler):
         except Exception as e:
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(f"Server Error: {str(e)}".encode('utf-8'))
+            self.wfile.write(str(e).encode('utf-8'))
 
     def log_message(self, format, *args):
-        """Clean console request logger."""
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {args[0]} -> {args[1]}")
-
-# ----------------------------------------------------------------------------
-# Server Entry Point
-# ----------------------------------------------------------------------------
+        pass # Clean console
 
 def run_server():
     init_db()
     print("=" * 65)
-    print(" 🚀 EXPENSE TRACKER BACKEND SERVER & DATABASE ENGINE")
+    print(" 💼 BUSINESS FINANCE & EXPENSE MANAGEMENT SERVER")
     print("=" * 65)
-    print(f" • Database File   : {DB_FILE} (SQLite)")
-    print(f" • Server Endpoint : http://localhost:{PORT}")
-    print(f" • Audit Log API   : http://localhost:{PORT}/api/audit-logs")
-    print(f" • Press Ctrl+C in terminal to deactivate / stop server.")
+    print(f" • Main Portal   : http://localhost:{PORT}")
+    print(f" • Admin Portal  : http://localhost:{PORT}/admin.html")
+    print(f" • Database File : {DB_FILE} (SQLite Immutable Ledger)")
     print("=" * 65)
 
-    with socketserver.TCPServer(("", PORT), ExpenseTrackerHandler) as httpd:
+    with socketserver.TCPServer(("", PORT), BusinessTrackerHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

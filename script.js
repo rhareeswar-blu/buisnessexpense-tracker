@@ -1,57 +1,47 @@
 /**
  * ==============================================================================
- * Expense Tracker — Full-Stack JavaScript Engine
- * Automatic Backend Detection (SQLite API) with graceful LocalStorage Fallback,
- * Audit History / Change Tracking, Chart.js Integration, and Light/Dark Modes
+ * Apex Business Finance — Client JavaScript Engine
+ * Real-Time SQLite Database Synchronization with LocalStorage Fallback,
+ * Business Categorization, Interactive Charts, and Navigation
  * ==============================================================================
  */
 
-// ------------------------------------------------------------------------------
-// 1. Constants & Category Configuration
-// ------------------------------------------------------------------------------
-
 const STORAGE_KEY_TRANSACTIONS = 'rupeewise_transactions_v1';
-const STORAGE_KEY_AUDIT_LOGS = 'rupeewise_audit_logs_v1';
 const STORAGE_KEY_THEME = 'rupeewise_theme_v1';
-
-// Server API base URL (relative for same-origin or localhost:5000)
 const API_BASE = window.location.origin.includes('5000') ? '' : 'http://localhost:5000';
 
 const CATEGORIES = {
   expense: [
-    { name: 'Food & Dining', icon: 'fa-utensils', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
-    { name: 'Groceries', icon: 'fa-basket-shopping', color: '#84cc16', bg: 'rgba(132, 204, 22, 0.15)' },
-    { name: 'Shopping', icon: 'fa-bag-shopping', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' },
-    { name: 'Housing & Rent', icon: 'fa-house', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)' },
-    { name: 'Transportation', icon: 'fa-car', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
-    { name: 'Utilities & Bills', icon: 'fa-bolt', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' },
-    { name: 'Entertainment', icon: 'fa-film', color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' },
-    { name: 'Healthcare', icon: 'fa-heart-pulse', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
-    { name: 'Education', icon: 'fa-graduation-cap', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' },
-    { name: 'Travel', icon: 'fa-plane', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.15)' },
-    { name: 'Personal Care', icon: 'fa-spa', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.15)' },
-    { name: 'Other Expense', icon: 'fa-shapes', color: '#64748b', bg: 'rgba(100, 116, 139, 0.15)' }
+    { name: 'Salaries & Payroll', icon: 'fa-users', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)' },
+    { name: 'Office Rent & Facilities', icon: 'fa-building', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
+    { name: 'Cloud & Software Tools', icon: 'fa-server', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' },
+    { name: 'Marketing & Advertising', icon: 'fa-bullhorn', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' },
+    { name: 'Hardware & Equipment', icon: 'fa-laptop', color: '#84cc16', bg: 'rgba(132, 204, 22, 0.15)' },
+    { name: 'Travel & Logistics', icon: 'fa-plane-departure', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.15)' },
+    { name: 'Utilities & Internet', icon: 'fa-bolt', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' },
+    { name: 'Legal, Taxes & Audit', icon: 'fa-scale-balanced', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
+    { name: 'Vendor & Contractor Pay', icon: 'fa-truck-fast', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
+    { name: 'Other Operating Cost', icon: 'fa-shapes', color: '#64748b', bg: 'rgba(100, 116, 139, 0.15)' }
   ],
   income: [
-    { name: 'Salary', icon: 'fa-building-columns', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
-    { name: 'Freelance & Projects', icon: 'fa-laptop-code', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' },
-    { name: 'Investments & Dividends', icon: 'fa-arrow-trend-up', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
-    { name: 'Business', icon: 'fa-briefcase', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' },
-    { name: 'Allowance & Gifts', icon: 'fa-gift', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' },
-    { name: 'Rental Income', icon: 'fa-key', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
-    { name: 'Other Income', icon: 'fa-coins', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.15)' }
+    { name: 'Client Invoices & Retainers', icon: 'fa-file-invoice-dollar', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
+    { name: 'Consulting & Services', icon: 'fa-handshake', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' },
+    { name: 'Product & SaaS Sales', icon: 'fa-boxes-stacked', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
+    { name: 'Investments & Returns', icon: 'fa-arrow-trend-up', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' },
+    { name: 'Grants & Subsidies', icon: 'fa-award', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' },
+    { name: 'Other Business Revenue', icon: 'fa-coins', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.15)' }
   ]
 };
 
 const SAMPLE_TRANSACTIONS = [
-  { id: 'tx_sample_1', description: 'Monthly Salary Credit', amount: 65000, type: 'income', category: 'Salary', date: getRelativeDateString(2) },
-  { id: 'tx_sample_2', description: 'Apartment Rent Payment', amount: 18000, type: 'expense', category: 'Housing & Rent', date: getRelativeDateString(3) },
-  { id: 'tx_sample_3', description: 'Freelance Web Design Project', amount: 22000, type: 'income', category: 'Freelance & Projects', date: getRelativeDateString(5) },
-  { id: 'tx_sample_4', description: 'Supermarket Grocery Restock', amount: 3450, type: 'expense', category: 'Groceries', date: getRelativeDateString(6) },
-  { id: 'tx_sample_5', description: 'Electricity & High-Speed WiFi Bill', amount: 2150, type: 'expense', category: 'Utilities & Bills', date: getRelativeDateString(8) },
-  { id: 'tx_sample_6', description: 'Weekend Dining & Cafe', amount: 1680, type: 'expense', category: 'Food & Dining', date: getRelativeDateString(10) },
-  { id: 'tx_sample_7', description: 'Stock Market Dividend', amount: 4500, type: 'income', category: 'Investments & Dividends', date: getRelativeDateString(14) },
-  { id: 'tx_sample_8', description: 'Fuel & Metro Travel Pass', amount: 1950, type: 'expense', category: 'Transportation', date: getRelativeDateString(18) }
+  { id: 'tx_b_1', description: 'Client Retainer — Enterprise Cloud Migration', amount: 185000, type: 'income', category: 'Client Invoices & Retainers', date: getRelativeDateString(2) },
+  { id: 'tx_b_2', description: 'Monthly Office Lease & Co-working Space', amount: 45000, type: 'expense', category: 'Office Rent & Facilities', date: getRelativeDateString(3) },
+  { id: 'tx_b_3', description: 'Core Engineering & Design Team Payroll', amount: 95000, type: 'expense', category: 'Salaries & Payroll', date: getRelativeDateString(5) },
+  { id: 'tx_b_4', description: 'SaaS Consulting & Custom API Integration', amount: 68000, type: 'income', category: 'Consulting & Services', date: getRelativeDateString(7) },
+  { id: 'tx_b_5', description: 'AWS Cloud Infrastructure & Server Hosting', amount: 12400, type: 'expense', category: 'Cloud & Software Tools', date: getRelativeDateString(9) },
+  { id: 'tx_b_6', description: 'Digital Marketing Campaign & Google Ads', amount: 16500, type: 'expense', category: 'Marketing & Advertising', date: getRelativeDateString(12) },
+  { id: 'tx_b_7', description: 'Quarterly High-Yield Corporate Deposit', amount: 8500, type: 'income', category: 'Investments & Returns', date: getRelativeDateString(14) },
+  { id: 'tx_b_8', description: 'Office Gigabit Internet & Power Utilities', amount: 4800, type: 'expense', category: 'Utilities & Internet', date: getRelativeDateString(16) }
 ];
 
 function getRelativeDateString(daysAgo) {
@@ -61,15 +51,13 @@ function getRelativeDateString(daysAgo) {
 }
 
 // ------------------------------------------------------------------------------
-// 2. State Variables
+// State & References
 // ------------------------------------------------------------------------------
 let transactions = [];
-let auditLogs = [];
 let isBackendConnected = false;
 let pendingDeleteId = null;
 let categoryChartInstance = null;
 let monthlyChartInstance = null;
-let activeAuditTab = 'all';
 
 const filterState = {
   search: '',
@@ -78,21 +66,15 @@ const filterState = {
   sortBy: 'date-desc'
 };
 
-// ------------------------------------------------------------------------------
-// 3. DOM Elements
-// ------------------------------------------------------------------------------
 const DOM = {
-  // Status & Header
   backendStatusBadge: document.getElementById('backendStatusBadge'),
   backendStatusText: document.getElementById('backendStatusText'),
   themeToggleBtn: document.getElementById('themeToggleBtn'),
   currentDateText: document.getElementById('currentDateText'),
-  auditLogBtn: document.getElementById('auditLogBtn'),
   sampleDataBtn: document.getElementById('sampleDataBtn'),
   exportCsvBtn: document.getElementById('exportCsvBtn'),
   clearAllBtn: document.getElementById('clearAllBtn'),
 
-  // Overview Stats
   totalBalance: document.getElementById('totalBalance'),
   balanceCard: document.getElementById('balanceCard'),
   balanceBadge: document.getElementById('balanceBadge'),
@@ -104,7 +86,6 @@ const DOM = {
   savingsRate: document.getElementById('savingsRate'),
   monthlyExpenseText: document.getElementById('monthlyExpenseText'),
 
-  // Form Elements
   form: document.getElementById('transactionForm'),
   typeExpenseRadio: document.getElementById('typeExpense'),
   typeIncomeRadio: document.getElementById('typeIncome'),
@@ -119,7 +100,6 @@ const DOM = {
   categoryError: document.getElementById('categoryError'),
   dateError: document.getElementById('dateError'),
 
-  // History & Filters
   searchInput: document.getElementById('searchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
   filterAllBtn: document.getElementById('filterAll'),
@@ -136,7 +116,6 @@ const DOM = {
   emptyStateActionBtn: document.getElementById('emptyStateActionBtn'),
   resetFiltersBtn: document.getElementById('resetFiltersBtn'),
 
-  // Charts
   categoryChart: document.getElementById('categoryChart'),
   categoryChartContainer: document.getElementById('categoryChartContainer'),
   categoryChartEmpty: document.getElementById('categoryChartEmpty'),
@@ -144,7 +123,6 @@ const DOM = {
   monthlyChartContainer: document.getElementById('monthlyChartContainer'),
   monthlyChartEmpty: document.getElementById('monthlyChartEmpty'),
 
-  // Delete & Clear Modals
   deleteModal: document.getElementById('deleteModal'),
   deleteTargetName: document.getElementById('deleteTargetName'),
   cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
@@ -153,22 +131,11 @@ const DOM = {
   cancelClearBtn: document.getElementById('cancelClearBtn'),
   confirmClearBtn: document.getElementById('confirmClearBtn'),
 
-  // Audit History Modal
-  auditModal: document.getElementById('auditModal'),
-  closeAuditModalBtn: document.getElementById('closeAuditModalBtn'),
-  closeAuditBtn: document.getElementById('closeAuditBtn'),
-  tabAllLogs: document.getElementById('tabAllLogs'),
-  tabDeletedLogs: document.getElementById('tabDeletedLogs'),
-  auditCountAll: document.getElementById('auditCountAll'),
-  auditCountDeleted: document.getElementById('auditCountDeleted'),
-  auditTimeline: document.getElementById('auditTimeline'),
-
-  // Toast Container
   toastContainer: document.getElementById('toastContainer')
 };
 
 // ------------------------------------------------------------------------------
-// 4. App Initialization & Backend Detection
+// Initialization
 // ------------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
@@ -181,7 +148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateUI();
 });
 
-/** Detects if the Python SQLite Backend Server is active */
 async function checkBackendStatus() {
   try {
     const res = await fetch(`${API_BASE}/api/health`, { method: 'GET', signal: AbortSignal.timeout(1500) });
@@ -190,7 +156,7 @@ async function checkBackendStatus() {
       DOM.backendStatusBadge.className = 'backend-badge connected';
       DOM.backendStatusText.textContent = 'SQLite Database Active';
     } else {
-      throw new Error('Backend responded with non-200 status');
+      throw new Error();
     }
   } catch (err) {
     isBackendConnected = false;
@@ -207,35 +173,24 @@ function initDateDisplay() {
 }
 
 function initTheme() {
-  const savedTheme = localStorage.getItem(STORAGE_KEY_THEME);
-  if (savedTheme) {
-    applyTheme(savedTheme);
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(prefersDark ? 'dark' : 'light');
-  }
-}
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem(STORAGE_KEY_THEME, theme);
-  if (categoryChartInstance && monthlyChartInstance) {
-    updateCharts();
-  }
+  const savedTheme = localStorage.getItem(STORAGE_KEY_THEME) || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
 function toggleTheme() {
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
   const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-  applyTheme(newTheme);
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem(STORAGE_KEY_THEME, newTheme);
+  if (categoryChartInstance && monthlyChartInstance) {
+    updateCharts();
+  }
   showToast(`Switched to ${newTheme === 'dark' ? 'Dark' : 'Light'} Mode`, 'info');
 }
 
 // ------------------------------------------------------------------------------
-// 5. Data Layer (Dual Mode: SQLite Backend API + LocalStorage)
+// Data Handling
 // ------------------------------------------------------------------------------
-
-/** Loads transactions from API (if connected) or LocalStorage */
 async function loadTransactions() {
   if (isBackendConnected) {
     try {
@@ -246,11 +201,10 @@ async function loadTransactions() {
         return;
       }
     } catch (e) {
-      console.warn('API error, falling back to LocalStorage:', e);
+      console.warn('API error, falling back locally:', e);
     }
   }
 
-  // Fallback to LocalStorage
   try {
     const rawData = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
     if (rawData) {
@@ -264,36 +218,17 @@ async function loadTransactions() {
   }
 }
 
-/** LocalStorage sync helper */
 function saveLocalTransactions() {
   try {
     localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(transactions));
   } catch (e) {
-    console.error('LocalStorage write failed:', e);
-  }
-}
-
-/** Logs local audit entry if in LocalStorage mode */
-function logLocalAudit(action, transactionId, details) {
-  try {
-    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY_AUDIT_LOGS) || '[]');
-    logs.unshift({
-      id: Date.now(),
-      action,
-      transaction_id: transactionId,
-      details,
-      timestamp: new Date().toLocaleString('en-IN')
-    });
-    localStorage.setItem(STORAGE_KEY_AUDIT_LOGS, JSON.stringify(logs.slice(0, 100)));
-  } catch (e) {
-    console.error('Audit logging failed:', e);
+    console.error('Local save error:', e);
   }
 }
 
 // ------------------------------------------------------------------------------
-// 6. UI Calculations & Rendering
+// UI & Calculations
 // ------------------------------------------------------------------------------
-
 function updateUI() {
   calculateAndRenderOverview();
   renderCategoryFilterOptions();
@@ -325,23 +260,23 @@ function calculateAndRenderOverview() {
   });
 
   const netBalance = incomeTotal - expenseTotal;
-  const savingsRate = incomeTotal > 0 ? Math.max(0, Math.round(((incomeTotal - expenseTotal) / incomeTotal) * 100)) : 0;
+  const margin = incomeTotal > 0 ? Math.round(((incomeTotal - expenseTotal) / incomeTotal) * 100) : 0;
 
   DOM.totalBalance.textContent = formatCurrency(netBalance);
   DOM.totalIncome.textContent = formatCurrency(incomeTotal);
   DOM.totalExpenses.textContent = formatCurrency(expenseTotal);
-  DOM.savingsRate.textContent = `${savingsRate}%`;
+  DOM.savingsRate.textContent = `${margin}%`;
 
-  DOM.incomeCount.textContent = `${incomeCount} transaction${incomeCount === 1 ? '' : 's'}`;
-  DOM.expenseCount.textContent = `${expenseCount} transaction${expenseCount === 1 ? '' : 's'}`;
-  DOM.monthlyExpenseText.textContent = `This month: ${formatCurrency(currentMonthExpense)}`;
+  DOM.incomeCount.textContent = `${incomeCount} revenue stream${incomeCount === 1 ? '' : 's'}`;
+  DOM.expenseCount.textContent = `${expenseCount} expense record${expenseCount === 1 ? '' : 's'}`;
+  DOM.monthlyExpenseText.textContent = `This month costs: ${formatCurrency(currentMonthExpense)}`;
 
   if (netBalance >= 0) {
     DOM.balanceBadge.className = 'stat-badge';
-    DOM.balanceBadge.innerHTML = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> <span>Net Positive</span>';
+    DOM.balanceBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i> <span>Profitable</span>';
   } else {
     DOM.balanceBadge.className = 'stat-badge negative';
-    DOM.balanceBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> <span>Deficit</span>';
+    DOM.balanceBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> <span>Operating Deficit</span>';
   }
 }
 
@@ -365,9 +300,8 @@ function formatDate(dateStr) {
 }
 
 // ------------------------------------------------------------------------------
-// 7. Form Operations (Add Transaction)
+// Form Handling
 // ------------------------------------------------------------------------------
-
 function populateCategorySelect(type) {
   const categories = CATEGORIES[type] || [];
   DOM.categorySelect.innerHTML = '';
@@ -415,23 +349,17 @@ async function handleFormSubmit(e) {
   let isValid = true;
 
   if (!description) {
-    showFieldError(DOM.descriptionInput, DOM.descriptionError, 'Please enter a description.');
-    isValid = false;
-  } else if (description.length > 60) {
-    showFieldError(DOM.descriptionInput, DOM.descriptionError, 'Description must be under 60 characters.');
+    showFieldError(DOM.descriptionInput, DOM.descriptionError, 'Please enter a description or invoice reference.');
     isValid = false;
   }
 
   if (isNaN(amount) || amount <= 0) {
-    showFieldError(DOM.amountInput, DOM.amountError, 'Please enter a valid amount greater than ₹0.');
-    isValid = false;
-  } else if (amount > 100000000) {
-    showFieldError(DOM.amountInput, DOM.amountError, 'Amount exceeds maximum limit.');
+    showFieldError(DOM.amountInput, DOM.amountError, 'Please enter a valid amount.');
     isValid = false;
   }
 
   if (!category) {
-    showFieldError(DOM.categorySelect, DOM.categoryError, 'Please select a category.');
+    showFieldError(DOM.categorySelect, DOM.categoryError, 'Please select a business category.');
     isValid = false;
   }
 
@@ -443,7 +371,7 @@ async function handleFormSubmit(e) {
   if (!isValid) return;
 
   const newTx = {
-    id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    id: 'tx_b_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
     description,
     amount,
     type,
@@ -460,19 +388,14 @@ async function handleFormSubmit(e) {
       });
       if (res.ok) {
         await loadTransactions();
-      } else {
-        throw new Error('API save failed');
       }
     } catch (err) {
-      console.warn('Backend save error, using LocalStorage:', err);
       transactions.unshift(newTx);
       saveLocalTransactions();
-      logLocalAudit('CREATE', newTx.id, newTx);
     }
   } else {
     transactions.unshift(newTx);
     saveLocalTransactions();
-    logLocalAudit('CREATE', newTx.id, newTx);
   }
 
   DOM.descriptionInput.value = '';
@@ -481,7 +404,7 @@ async function handleFormSubmit(e) {
   DOM.descriptionInput.focus();
 
   updateUI();
-  showToast(`Added ${type}: "${description}" (${formatCurrency(amount)})`, 'success');
+  showToast(`Recorded ${type}: "${description}" (${formatCurrency(amount)})`, 'success');
 }
 
 function showFieldError(inputEl, errorEl, message) {
@@ -501,9 +424,8 @@ function clearValidationErrors() {
 }
 
 // ------------------------------------------------------------------------------
-// 8. Transaction List & Filtering
+// Ledger & Filter Section
 // ------------------------------------------------------------------------------
-
 function renderCategoryFilterOptions() {
   const currentSelection = DOM.categoryFilter.value;
   DOM.categoryFilter.innerHTML = '<option value="all">All Categories</option>';
@@ -529,25 +451,13 @@ function renderTransactionList() {
   const filtered = getFilteredTransactions();
 
   DOM.transactionCountBadge.textContent = `${transactions.length} Record${transactions.length === 1 ? '' : 's'}`;
-  DOM.filteredSummaryText.textContent = `Showing ${filtered.length} of ${transactions.length} transaction${transactions.length === 1 ? '' : 's'}`;
+  DOM.filteredSummaryText.textContent = `Showing ${filtered.length} of ${transactions.length} record${transactions.length === 1 ? '' : 's'}`;
 
   DOM.transactionList.innerHTML = '';
 
   if (filtered.length === 0) {
     DOM.emptyState.style.display = 'flex';
     DOM.transactionList.style.display = 'none';
-
-    if (transactions.length === 0) {
-      DOM.emptyStateTitle.textContent = 'No Transactions Yet';
-      DOM.emptyStateDesc.textContent = 'Start by adding your first income or expense transaction on the left!';
-      DOM.emptyStateActionBtn.style.display = 'inline-flex';
-      DOM.resetFiltersBtn.style.display = 'none';
-    } else {
-      DOM.emptyStateTitle.textContent = 'No Matches Found';
-      DOM.emptyStateDesc.textContent = 'No transactions match your active search or filter criteria.';
-      DOM.emptyStateActionBtn.style.display = 'none';
-      DOM.resetFiltersBtn.style.display = 'inline-flex';
-    }
     return;
   }
 
@@ -585,14 +495,13 @@ function createTransactionElement(tx) {
       <span class="item-amount ${isIncome ? 'income' : 'expense'}">
         ${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}
       </span>
-      <button class="delete-btn" data-id="${tx.id}" title="Delete transaction" aria-label="Delete ${escapeHtml(tx.description)}">
-        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+      <button class="delete-btn" data-id="${tx.id}" title="Archive transaction" aria-label="Archive ${escapeHtml(tx.description)}">
+        <i class="fa-solid fa-trash-can"></i>
       </button>
     </div>
   `;
 
-  const deleteBtn = li.querySelector('.delete-btn');
-  deleteBtn.addEventListener('click', (e) => {
+  li.querySelector('.delete-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     promptDeleteTransaction(tx.id);
   });
@@ -615,12 +524,7 @@ function getFilteredTransactions() {
 
   if (filterState.search) {
     const query = filterState.search.toLowerCase();
-    result = result.filter((tx) => {
-      return (
-        tx.description.toLowerCase().includes(query) ||
-        tx.category.toLowerCase().includes(query)
-      );
-    });
+    result = result.filter((tx) => tx.description.toLowerCase().includes(query) || tx.category.toLowerCase().includes(query));
   }
 
   if (filterState.type !== 'all') {
@@ -632,29 +536,19 @@ function getFilteredTransactions() {
   }
 
   switch (filterState.sortBy) {
-    case 'date-desc':
-      result.sort((a, b) => new Date(b.date) - new Date(a.date));
-      break;
-    case 'date-asc':
-      result.sort((a, b) => new Date(a.date) - new Date(b.date));
-      break;
-    case 'amount-desc':
-      result.sort((a, b) => Number(b.amount) - Number(a.amount));
-      break;
-    case 'amount-asc':
-      result.sort((a, b) => Number(a.amount) - Number(b.amount));
-      break;
-    default:
-      result.sort((a, b) => new Date(b.date) - new Date(a.date));
+    case 'date-desc': result.sort((a, b) => new Date(b.date) - new Date(a.date)); break;
+    case 'date-asc': result.sort((a, b) => new Date(a.date) - new Date(b.date)); break;
+    case 'amount-desc': result.sort((a, b) => Number(b.amount) - Number(a.amount)); break;
+    case 'amount-asc': result.sort((a, b) => Number(a.amount) - Number(b.amount)); break;
+    default: result.sort((a, b) => new Date(b.date) - new Date(a.date));
   }
 
   return result;
 }
 
 // ------------------------------------------------------------------------------
-// 9. Chart Analytics
+// Charts
 // ------------------------------------------------------------------------------
-
 function updateCharts() {
   updateCategoryChart();
   updateMonthlyChart();
@@ -678,7 +572,7 @@ function updateCategoryChart() {
 
   const categoryTotals = {};
   expenseTransactions.forEach((tx) => {
-    const cat = tx.category || 'Other Expense';
+    const cat = tx.category || 'Other Operating Cost';
     categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(tx.amount);
   });
 
@@ -699,25 +593,19 @@ function updateCategoryChart() {
     const ctx = DOM.categoryChart.getContext('2d');
     categoryChartInstance = new Chart(ctx, {
       type: 'doughnut',
-      data: {
-        labels,
-        datasets: [{ data, backgroundColor: backgroundColors, borderWidth: 2, borderColor: isDarkMode ? '#131b26' : '#ffffff', hoverOffset: 6 }]
-      },
+      data: { labels, datasets: [{ data, backgroundColor: backgroundColors, borderWidth: 2, borderColor: isDarkMode ? '#111827' : '#ffffff', hoverOffset: 6 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '65%',
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { boxWidth: 12, padding: 14, font: { family: "'Inter', sans-serif", size: 11, weight: '500' }, color: textColor }
-          },
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { family: "'Inter', sans-serif", size: 11, weight: '500' }, color: textColor } },
           tooltip: {
             callbacks: {
-              label: function (ctx) {
+              label: (ctx) => {
                 const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                const percent = Math.round(((ctx.raw || 0) / total) * 100);
-                return ` ${ctx.label}: ${formatCurrency(ctx.raw)} (${percent}%)`;
+                const pct = Math.round(((ctx.raw || 0) / total) * 100);
+                return ` ${ctx.label}: ${formatCurrency(ctx.raw)} (${pct}%)`;
               }
             }
           }
@@ -761,7 +649,7 @@ function updateMonthlyChart() {
 
   const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
   const textColor = isDarkMode ? '#94a3b8' : '#64748b';
-  const gridColor = isDarkMode ? '#263346' : '#e2e8f0';
+  const gridColor = isDarkMode ? '#334155' : '#e2e8f0';
 
   if (monthlyChartInstance) {
     monthlyChartInstance.data.labels = labels;
@@ -775,10 +663,7 @@ function updateMonthlyChart() {
     const ctx = DOM.monthlyChart.getContext('2d');
     monthlyChartInstance = new Chart(ctx, {
       type: 'bar',
-      data: {
-        labels,
-        datasets: [{ label: 'Monthly Expense', data, backgroundColor: '#0d9488', borderRadius: 6, maxBarThickness: 36 }]
-      },
+      data: { labels, datasets: [{ label: 'Operating Costs', data, backgroundColor: '#2563eb', borderRadius: 6, maxBarThickness: 36 }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -793,19 +678,15 @@ function updateMonthlyChart() {
             }
           }
         },
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: (ctx) => ` Total Expense: ${formatCurrency(ctx.raw)}` } }
-        }
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` Total Cost: ${formatCurrency(ctx.raw)}` } } }
       }
     });
   }
 }
 
 // ------------------------------------------------------------------------------
-// 10. Deletions, Reset & Audit Trail
+// Deletions & Archive
 // ------------------------------------------------------------------------------
-
 function promptDeleteTransaction(id) {
   const targetTx = transactions.find((t) => t.id === id);
   if (!targetTx) return;
@@ -829,27 +710,20 @@ async function confirmDeleteTransaction() {
 
   if (isBackendConnected) {
     try {
-      const res = await fetch(`${API_BASE}/api/transactions/${deletedId}`, { method: 'DELETE' });
-      if (res.ok) {
-        await loadTransactions();
-      } else {
-        throw new Error('API delete failed');
-      }
+      await fetch(`${API_BASE}/api/transactions/${deletedId}`, { method: 'DELETE' });
+      await loadTransactions();
     } catch (e) {
-      console.warn('Backend delete error, falling back locally:', e);
       transactions = transactions.filter((t) => t.id !== deletedId);
       saveLocalTransactions();
-      if (targetTx) logLocalAudit('DELETE', deletedId, targetTx);
     }
   } else {
     transactions = transactions.filter((t) => t.id !== deletedId);
     saveLocalTransactions();
-    if (targetTx) logLocalAudit('DELETE', deletedId, targetTx);
   }
 
   closeDeleteModal();
   updateUI();
-  showToast(`Deleted & archived: "${targetTx ? targetTx.description : ''}"`, 'info');
+  showToast(`Archived transaction "${targetTx ? targetTx.description : ''}" to audit ledger.`, 'info');
 }
 
 function promptClearAll() {
@@ -873,139 +747,20 @@ async function confirmClearAll() {
     } catch (e) {
       transactions = [];
       saveLocalTransactions();
-      logLocalAudit('RESET', null, { count: transactions.length });
     }
   } else {
     transactions = [];
     saveLocalTransactions();
-    logLocalAudit('RESET', null, { count: transactions.length });
   }
 
   closeClearModal();
   updateUI();
-  showToast('All transactions archived into change history.', 'info');
+  showToast('All active transactions archived in corporate ledger.', 'info');
 }
 
 // ------------------------------------------------------------------------------
-// 11. Activity History & Audit Log Modal
+// Export CSV & Toast
 // ------------------------------------------------------------------------------
-
-async function openAuditModal() {
-  DOM.auditModal.style.display = 'flex';
-  await refreshAuditLogs();
-}
-
-function closeAuditModal() {
-  DOM.auditModal.style.display = 'none';
-}
-
-async function refreshAuditLogs() {
-  let logs = [];
-
-  if (isBackendConnected) {
-    try {
-      const res = await fetch(`${API_BASE}/api/audit-logs`);
-      const json = await res.json();
-      if (json.status === 'success') {
-        logs = json.data;
-      }
-    } catch (e) {
-      logs = JSON.parse(localStorage.getItem(STORAGE_KEY_AUDIT_LOGS) || '[]');
-    }
-  } else {
-    logs = JSON.parse(localStorage.getItem(STORAGE_KEY_AUDIT_LOGS) || '[]');
-  }
-
-  auditLogs = logs;
-  const deletedCount = logs.filter((l) => l.action === 'DELETE').length;
-
-  DOM.auditCountAll.textContent = logs.length;
-  DOM.auditCountDeleted.textContent = deletedCount;
-
-  renderAuditTimeline();
-}
-
-function renderAuditTimeline() {
-  DOM.auditTimeline.innerHTML = '';
-
-  const displayLogs = activeAuditTab === 'deleted'
-    ? auditLogs.filter((l) => l.action === 'DELETE')
-    : auditLogs;
-
-  if (displayLogs.length === 0) {
-    DOM.auditTimeline.innerHTML = `
-      <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
-        <i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; opacity: 0.5; margin-bottom: 0.5rem;"></i>
-        <p>No ${activeAuditTab === 'deleted' ? 'deleted transactions' : 'audit logs'} recorded yet.</p>
-      </div>
-    `;
-    return;
-  }
-
-  displayLogs.forEach((log) => {
-    const item = document.createElement('div');
-    item.className = 'audit-item';
-
-    const actionBadgeClass =
-      log.action === 'CREATE'
-        ? 'badge-create'
-        : log.action === 'DELETE'
-        ? 'badge-delete'
-        : log.action === 'RESTORE'
-        ? 'badge-restore'
-        : 'badge-reset';
-
-    const details = typeof log.details === 'object' ? log.details : {};
-    const desc = details.description || (log.action === 'RESET' ? 'Reset All Transactions' : 'Transaction Entry');
-    const amtStr = details.amount ? ` • ${formatCurrency(details.amount)}` : '';
-    const catStr = details.category ? ` (${details.category})` : '';
-
-    item.innerHTML = `
-      <div class="audit-left">
-        <span class="audit-badge ${actionBadgeClass}">${log.action}</span>
-        <div class="audit-info">
-          <span class="audit-desc">${escapeHtml(desc)}${catStr}${amtStr}</span>
-          <span class="audit-time">${escapeHtml(log.timestamp || '')}</span>
-        </div>
-      </div>
-      ${
-        log.action === 'DELETE' && isBackendConnected && log.transaction_id
-          ? `<button class="restore-btn" data-id="${log.transaction_id}" title="Restore transaction">
-              <i class="fa-solid fa-rotate-left"></i> Restore
-             </button>`
-          : ''
-      }
-    `;
-
-    const restoreBtn = item.querySelector('.restore-btn');
-    if (restoreBtn) {
-      restoreBtn.addEventListener('click', async () => {
-        await restoreDeletedTransaction(log.transaction_id);
-      });
-    }
-
-    DOM.auditTimeline.appendChild(item);
-  });
-}
-
-async function restoreDeletedTransaction(id) {
-  try {
-    const res = await fetch(`${API_BASE}/api/transactions/restore/${id}`, { method: 'POST' });
-    if (res.ok) {
-      showToast('Transaction restored successfully!', 'success');
-      await loadTransactions();
-      await refreshAuditLogs();
-      updateUI();
-    }
-  } catch (e) {
-    showToast('Failed to restore transaction.', 'error');
-  }
-}
-
-// ------------------------------------------------------------------------------
-// 12. CSV Export & Toast
-// ------------------------------------------------------------------------------
-
 function exportTransactionsCSV() {
   if (transactions.length === 0) {
     showToast('No transactions available to export.', 'info');
@@ -1025,12 +780,12 @@ function exportTransactionsCSV() {
   const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
   const link = document.createElement('a');
   link.setAttribute('href', encodeURI(csvContent));
-  link.setAttribute('download', `Expense_Tracker_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `Apex_Business_Transactions_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 
-  showToast('Exported transactions to CSV successfully!', 'success');
+  showToast('Exported business transactions to CSV successfully!', 'success');
 }
 
 function showToast(message, type = 'info') {
@@ -1045,8 +800,7 @@ function showToast(message, type = 'info') {
 
   DOM.toastContainer.appendChild(toast);
   setTimeout(() => {
-    toast.classList.add('toast-hide');
-    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
+    toast.remove();
   }, 3200);
 }
 
@@ -1057,9 +811,8 @@ function escapeHtml(string) {
 }
 
 // ------------------------------------------------------------------------------
-// 13. Event Listeners
+// Event Listeners
 // ------------------------------------------------------------------------------
-
 function setupEventListeners() {
   DOM.themeToggleBtn.addEventListener('click', toggleTheme);
 
@@ -1136,10 +889,9 @@ function setupEventListeners() {
     } else {
       transactions = [...SAMPLE_TRANSACTIONS];
       saveLocalTransactions();
-      logLocalAudit('SAMPLE_DATA', null, { count: transactions.length });
     }
     updateUI();
-    showToast('Loaded demo sample transactions!', 'success');
+    showToast('Loaded demo business transactions!', 'success');
   });
 
   DOM.exportCsvBtn.addEventListener('click', exportTransactionsCSV);
@@ -1150,26 +902,7 @@ function setupEventListeners() {
   DOM.cancelClearBtn.addEventListener('click', closeClearModal);
   DOM.confirmClearBtn.addEventListener('click', confirmClearAll);
 
-  // Audit History Modal Listeners
-  DOM.auditLogBtn.addEventListener('click', openAuditModal);
-  DOM.closeAuditModalBtn.addEventListener('click', closeAuditModal);
-  DOM.closeAuditBtn.addEventListener('click', closeAuditModal);
-
-  DOM.tabAllLogs.addEventListener('click', () => {
-    DOM.tabAllLogs.classList.add('active');
-    DOM.tabDeletedLogs.classList.remove('active');
-    activeAuditTab = 'all';
-    renderAuditTimeline();
-  });
-
-  DOM.tabDeletedLogs.addEventListener('click', () => {
-    DOM.tabDeletedLogs.classList.add('active');
-    DOM.tabAllLogs.classList.remove('active');
-    activeAuditTab = 'deleted';
-    renderAuditTimeline();
-  });
-
-  [DOM.deleteModal, DOM.clearAllModal, DOM.auditModal].forEach((modal) => {
+  [DOM.deleteModal, DOM.clearAllModal].forEach((modal) => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.style.display = 'none';
     });
@@ -1179,7 +912,6 @@ function setupEventListeners() {
     if (e.key === 'Escape') {
       closeDeleteModal();
       closeClearModal();
-      closeAuditModal();
     }
   });
 }

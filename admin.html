@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Business Finance Admin Portal — Audit Ledger, Deletion Archives, and Financial Statement Generator." />
+  <title>Admin Portal — Business Finance & Audit Statements</title>
+
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome 6.5.1 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Admin Stylesheet -->
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  
+  <div class="admin-layout">
+    
+    <!-- Top Navigation Header -->
+    <header class="admin-header no-print">
+      <div class="header-brand">
+        <div class="admin-badge-icon">
+          <i class="fa-solid fa-building-shield"></i>
+        </div>
+        <div>
+          <div class="brand-title-wrap">
+            <h1 class="admin-title">Admin Management Portal</h1>
+            <span class="role-pill">Executive Admin</span>
+          </div>
+          <p class="admin-subtitle" id="headerCompanyName">Apex Business Solutions Pvt. Ltd.</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <a href="index.html" class="btn btn-outline" title="Return to General Expense Tracker">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Staff Tracker</span>
+        </a>
+
+        <button id="refreshAdminBtn" class="btn btn-secondary" title="Refresh Live Database Data">
+          <i class="fa-solid fa-rotate"></i>
+          <span>Sync</span>
+        </button>
+
+        <button id="adminThemeToggle" class="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <i class="fa-solid fa-sun icon-sun"></i>
+          <i class="fa-solid fa-moon icon-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Admin Body -->
+    <main class="admin-main">
+
+      <!-- Executive KPI Ribbon (No Print) -->
+      <section class="kpi-ribbon no-print" aria-label="Executive Financial Summary">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Gross Revenue</span>
+            <div class="kpi-icon-wrap kpi-revenue">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+          </div>
+          <div class="kpi-val" id="kpiRevenue">₹0.00</div>
+          <span class="kpi-sub" id="kpiIncomeCount">0 revenue transactions</span>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Operating Expenses</span>
+            <div class="kpi-icon-wrap kpi-expense">
+              <i class="fa-solid fa-arrow-trend-down"></i>
+            </div>
+          </div>
+          <div class="kpi-val" id="kpiExpense">₹0.00</div>
+          <span class="kpi-sub" id="kpiExpenseCount">0 cost entries</span>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Net Operating Profit</span>
+            <div class="kpi-icon-wrap kpi-profit" id="kpiProfitIcon">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+          </div>
+          <div class="kpi-val" id="kpiNetProfit">₹0.00</div>
+          <span class="kpi-sub" id="kpiMargin">Margin: 0%</span>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Audit Log Activity</span>
+            <div class="kpi-icon-wrap kpi-audit">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+          </div>
+          <div class="kpi-val" id="kpiAuditCount">0 Logs</div>
+          <span class="kpi-sub" id="kpiDeletedCount">0 archived items</span>
+        </div>
+      </section>
+
+      <!-- Admin Navigation Tabs (No Print) -->
+      <div class="admin-nav-tabs no-print">
+        <button class="nav-tab active" data-view="statementView">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>Financial Statement Generator</span>
+        </button>
+        <button class="nav-tab" data-view="auditLedgerView">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Audit & Change Ledger</span>
+        </button>
+        <button class="nav-tab" data-view="deletedArchiveView">
+          <i class="fa-solid fa-box-archive"></i>
+          <span>Archived / Deleted Items</span>
+        </button>
+        <button class="nav-tab" data-view="settingsView">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Business Profile</span>
+        </button>
+      </div>
+
+      <!-- VIEW 1: Financial Statement Generator -->
+      <section class="admin-view-panel" id="statementView">
+        
+        <!-- Controls Toolbar (No Print) -->
+        <div class="statement-toolbar no-print">
+          <div class="period-controls">
+            <div class="filter-field">
+              <label for="periodPreset">Statement Period:</label>
+              <select id="periodPreset" class="admin-select">
+                <option value="all">All-Time Records</option>
+                <option value="this-month" selected>This Month</option>
+                <option value="last-month">Last Month</option>
+                <option value="this-quarter">This Quarter</option>
+                <option value="custom">Custom Date Range</option>
+              </select>
+            </div>
+
+            <div class="date-range-fields" id="customDateRange" style="display: none;">
+              <div class="filter-field">
+                <label for="stmtStartDate">From:</label>
+                <input type="date" id="stmtStartDate" class="admin-input" />
+              </div>
+              <div class="filter-field">
+                <label for="stmtEndDate">To:</label>
+                <input type="date" id="stmtEndDate" class="admin-input" />
+              </div>
+            </div>
+
+            <button id="generateStmtBtn" class="btn btn-primary">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              <span>Generate</span>
+            </button>
+          </div>
+
+          <div class="statement-actions">
+            <button id="printStmtBtn" class="btn btn-success" title="Print statement or save as official PDF">
+              <i class="fa-solid fa-print"></i>
+              <span>Print Statement (PDF)</span>
+            </button>
+            <button id="exportStmtCsvBtn" class="btn btn-outline" title="Export statement data as CSV">
+              <i class="fa-solid fa-file-excel"></i>
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Official Printable Financial Statement Paper -->
+        <div class="statement-document" id="statementPrintDocument">
+          
+          <!-- Document Header -->
+          <div class="stmt-header">
+            <div class="stmt-company-info">
+              <h2 class="stmt-company-name" id="stmtCompanyName">Apex Business Solutions Pvt. Ltd.</h2>
+              <p class="stmt-company-meta" id="stmtCompanyTaxId">GSTIN: 27AABCU9603R1ZN &bull; Financial Year: 2026-2027</p>
+              <p class="stmt-doc-type">OFFICIAL STATEMENT OF INCOME & EXPENSES (PROFIT &amp; LOSS)</p>
+            </div>
+            <div class="stmt-doc-meta">
+              <div class="meta-row"><span>Statement Period:</span> <strong id="stmtPeriodText">Current Month</strong></div>
+              <div class="meta-row"><span>Generated On:</span> <strong id="stmtGeneratedDate">18 Aug 2026</strong></div>
+              <div class="meta-row"><span>Status:</span> <strong class="badge-audited">Audited & Verified</strong></div>
+            </div>
+          </div>
+
+          <!-- Document Financial Summary Metrics -->
+          <div class="stmt-summary-grid">
+            <div class="stmt-metric-box">
+              <span class="stmt-metric-label">1. Gross Business Revenue</span>
+              <span class="stmt-metric-val revenue-val" id="stmtGrossRevenue">₹0.00</span>
+            </div>
+            <div class="stmt-metric-box">
+              <span class="stmt-metric-label">2. Total Operating Expenses</span>
+              <span class="stmt-metric-val expense-val" id="stmtTotalExpenses">₹0.00</span>
+            </div>
+            <div class="stmt-metric-box highlight">
+              <span class="stmt-metric-label">3. Net Operating Profit / (Loss)</span>
+              <span class="stmt-metric-val profit-val" id="stmtNetProfit">₹0.00</span>
+            </div>
+            <div class="stmt-metric-box">
+              <span class="stmt-metric-label">4. Operating Profit Margin</span>
+              <span class="stmt-metric-val" id="stmtProfitMargin">0.00%</span>
+            </div>
+          </div>
+
+          <!-- Statement Breakdown Sections -->
+          <div class="stmt-tables-split">
+            
+            <!-- Revenue Breakdown -->
+            <div class="stmt-table-card">
+              <h3 class="stmt-section-title">
+                <i class="fa-solid fa-circle-arrow-down revenue-icon"></i>
+                Revenue & Inflow Breakdown
+              </h3>
+              <table class="stmt-table">
+                <thead>
+                  <tr>
+                    <th>Revenue Stream</th>
+                    <th class="text-right">Amount (INR)</th>
+                  </tr>
+                </thead>
+                <tbody id="stmtRevenueRows">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Expense Breakdown -->
+            <div class="stmt-table-card">
+              <h3 class="stmt-section-title">
+                <i class="fa-solid fa-circle-arrow-up expense-icon"></i>
+                Operating Expenditure Breakdown
+              </h3>
+              <table class="stmt-table">
+                <thead>
+                  <tr>
+                    <th>Expenditure Category</th>
+                    <th class="text-right">Amount (INR)</th>
+                  </tr>
+                </thead>
+                <tbody id="stmtExpenseRows">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+          <!-- Full Line-Item Transaction Register -->
+          <div class="stmt-full-ledger">
+            <h3 class="stmt-section-title">Itemized Transaction Ledger</h3>
+            <table class="stmt-table ledger-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th class="text-right">Amount (INR)</th>
+                </tr>
+              </thead>
+              <tbody id="stmtLedgerRows">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Official Sign-off Footer -->
+          <div class="stmt-footer">
+            <div class="stmt-notes">
+              <p><strong>Certification:</strong> This financial statement represents an authentic, immutable record extracted from the corporate SQLite ledger.</p>
+              <p>All recorded soft-deletions and modifications are logged in the tamper-evident audit ledger.</p>
+            </div>
+            <div class="stmt-signatures">
+              <div class="signature-box">
+                <div class="sign-line"></div>
+                <span>Prepared By (Accountant)</span>
+              </div>
+              <div class="signature-box">
+                <div class="sign-line"></div>
+                <span>Authorized Signatory (Director / Admin)</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- VIEW 2: Audit & Change Ledger -->
+      <section class="admin-view-panel" id="auditLedgerView" style="display: none;">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">System Audit & Change Ledger</h2>
+              <p class="panel-subtitle">Tamper-evident record of all transactions, additions, and deletions</p>
+            </div>
+            <div class="ledger-filter-group">
+              <button class="audit-filter-pill active" data-action="ALL">All Actions</button>
+              <button class="audit-filter-pill" data-action="CREATE">Created</button>
+              <button class="audit-filter-pill" data-action="DELETE">Deleted</button>
+              <button class="audit-filter-pill" data-action="RESTORE">Restored</button>
+              <button class="audit-filter-pill" data-action="RESET">Reset</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Transaction ID</th>
+                  <th>Description & Details</th>
+                  <th>Category</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="auditLedgerTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: Archived / Deleted Transactions -->
+      <section class="admin-view-panel" id="deletedArchiveView" style="display: none;">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Archived & Deleted Transactions</h2>
+              <p class="panel-subtitle">Deleted entries are permanently archived for audit compliance and can be restored at any time.</p>
+            </div>
+            <span class="policy-badge">
+              <i class="fa-solid fa-shield-halved"></i> Immutable Archive Policy
+            </span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Date Deleted</th>
+                  <th>Original Date</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th class="text-right">Amount</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="deletedArchiveTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: Business Settings -->
+      <section class="admin-view-panel" id="settingsView" style="display: none;">
+        <div class="panel-card max-w-xl">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Business Profile & Statement Settings</h2>
+              <p class="panel-subtitle">Configure company details to appear on generated financial statements</p>
+            </div>
+          </div>
+
+          <form id="businessProfileForm" class="settings-form">
+            <div class="form-group">
+              <label for="settingCompanyName" class="form-label">Company / Business Name</label>
+              <input type="text" id="settingCompanyName" class="admin-input" required />
+            </div>
+
+            <div class="form-group">
+              <label for="settingTaxId" class="form-label">Tax ID / GSTIN / Registration Number</label>
+              <input type="text" id="settingTaxId" class="admin-input" placeholder="e.g. GSTIN: 27AABCU9603R1ZN" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>Save Business Profile</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Admin Footer -->
+    <footer class="admin-footer no-print">
+      <p>&copy; 2026 <strong>Expense Tracker Enterprise</strong> &bull; Executive Admin &amp; Audit Subsystem.</p>
+    </footer>
+
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast-container" id="adminToastContainer" aria-live="polite"></div>
+
+  <!-- Admin Controller Script -->
+  <script src="admin.js"></script>
+</body>
+</html>

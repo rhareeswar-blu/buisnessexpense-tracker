@@ -1,7 +1,8 @@
 /**
  * ==============================================================================
- * Expense Tracker — Main Application Script
- * Pure Vanilla JavaScript (ES6+), LocalStorage persistence, Chart.js Integration
+ * Expense Tracker — Full-Stack JavaScript Engine
+ * Automatic Backend Detection (SQLite API) with graceful LocalStorage Fallback,
+ * Audit History / Change Tracking, Chart.js Integration, and Light/Dark Modes
  * ==============================================================================
  */
 
@@ -9,11 +10,13 @@
 // 1. Constants & Category Configuration
 // ------------------------------------------------------------------------------
 
-/** LocalStorage storage keys */
 const STORAGE_KEY_TRANSACTIONS = 'rupeewise_transactions_v1';
+const STORAGE_KEY_AUDIT_LOGS = 'rupeewise_audit_logs_v1';
 const STORAGE_KEY_THEME = 'rupeewise_theme_v1';
 
-/** Category configurations with semantic icons & color codes */
+// Server API base URL (relative for same-origin or localhost:5000)
+const API_BASE = window.location.origin.includes('5000') ? '' : 'http://localhost:5000';
+
 const CATEGORIES = {
   expense: [
     { name: 'Food & Dining', icon: 'fa-utensils', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
@@ -40,75 +43,17 @@ const CATEGORIES = {
   ]
 };
 
-/** High quality sample dataset for first time users */
 const SAMPLE_TRANSACTIONS = [
-  {
-    id: 'tx_sample_1',
-    description: 'Monthly Salary Credit',
-    amount: 65000,
-    type: 'income',
-    category: 'Salary',
-    date: getRelativeDateString(2)
-  },
-  {
-    id: 'tx_sample_2',
-    description: 'Apartment Rent Payment',
-    amount: 18000,
-    type: 'expense',
-    category: 'Housing & Rent',
-    date: getRelativeDateString(3)
-  },
-  {
-    id: 'tx_sample_3',
-    description: 'Freelance Web Design Project',
-    amount: 22000,
-    type: 'income',
-    category: 'Freelance & Projects',
-    date: getRelativeDateString(5)
-  },
-  {
-    id: 'tx_sample_4',
-    description: 'Supermarket Grocery Restock',
-    amount: 3450,
-    type: 'expense',
-    category: 'Groceries',
-    date: getRelativeDateString(6)
-  },
-  {
-    id: 'tx_sample_5',
-    description: 'Electricity & High-Speed WiFi Bill',
-    amount: 2150,
-    type: 'expense',
-    category: 'Utilities & Bills',
-    date: getRelativeDateString(8)
-  },
-  {
-    id: 'tx_sample_6',
-    description: 'Weekend Dining & Cafe',
-    amount: 1680,
-    type: 'expense',
-    category: 'Food & Dining',
-    date: getRelativeDateString(10)
-  },
-  {
-    id: 'tx_sample_7',
-    description: 'Stock Market Dividend',
-    amount: 4500,
-    type: 'income',
-    category: 'Investments & Dividends',
-    date: getRelativeDateString(14)
-  },
-  {
-    id: 'tx_sample_8',
-    description: 'Fuel & Metro Travel Pass',
-    amount: 1950,
-    type: 'expense',
-    category: 'Transportation',
-    date: getRelativeDateString(18)
-  }
+  { id: 'tx_sample_1', description: 'Monthly Salary Credit', amount: 65000, type: 'income', category: 'Salary', date: getRelativeDateString(2) },
+  { id: 'tx_sample_2', description: 'Apartment Rent Payment', amount: 18000, type: 'expense', category: 'Housing & Rent', date: getRelativeDateString(3) },
+  { id: 'tx_sample_3', description: 'Freelance Web Design Project', amount: 22000, type: 'income', category: 'Freelance & Projects', date: getRelativeDateString(5) },
+  { id: 'tx_sample_4', description: 'Supermarket Grocery Restock', amount: 3450, type: 'expense', category: 'Groceries', date: getRelativeDateString(6) },
+  { id: 'tx_sample_5', description: 'Electricity & High-Speed WiFi Bill', amount: 2150, type: 'expense', category: 'Utilities & Bills', date: getRelativeDateString(8) },
+  { id: 'tx_sample_6', description: 'Weekend Dining & Cafe', amount: 1680, type: 'expense', category: 'Food & Dining', date: getRelativeDateString(10) },
+  { id: 'tx_sample_7', description: 'Stock Market Dividend', amount: 4500, type: 'income', category: 'Investments & Dividends', date: getRelativeDateString(14) },
+  { id: 'tx_sample_8', description: 'Fuel & Metro Travel Pass', amount: 1950, type: 'expense', category: 'Transportation', date: getRelativeDateString(18) }
 ];
 
-/** Helper function to generate sample dates relative to today */
 function getRelativeDateString(daysAgo) {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
@@ -116,12 +61,15 @@ function getRelativeDateString(daysAgo) {
 }
 
 // ------------------------------------------------------------------------------
-// 2. Application State
+// 2. State Variables
 // ------------------------------------------------------------------------------
 let transactions = [];
+let auditLogs = [];
+let isBackendConnected = false;
 let pendingDeleteId = null;
 let categoryChartInstance = null;
 let monthlyChartInstance = null;
+let activeAuditTab = 'all';
 
 const filterState = {
   search: '',
@@ -131,12 +79,15 @@ const filterState = {
 };
 
 // ------------------------------------------------------------------------------
-// 3. DOM Element References
+// 3. DOM Elements
 // ------------------------------------------------------------------------------
 const DOM = {
-  // Theme & Header
+  // Status & Header
+  backendStatusBadge: document.getElementById('backendStatusBadge'),
+  backendStatusText: document.getElementById('backendStatusText'),
   themeToggleBtn: document.getElementById('themeToggleBtn'),
   currentDateText: document.getElementById('currentDateText'),
+  auditLogBtn: document.getElementById('auditLogBtn'),
   sampleDataBtn: document.getElementById('sampleDataBtn'),
   exportCsvBtn: document.getElementById('exportCsvBtn'),
   clearAllBtn: document.getElementById('clearAllBtn'),
@@ -193,7 +144,7 @@ const DOM = {
   monthlyChartContainer: document.getElementById('monthlyChartContainer'),
   monthlyChartEmpty: document.getElementById('monthlyChartEmpty'),
 
-  // Modals
+  // Delete & Clear Modals
   deleteModal: document.getElementById('deleteModal'),
   deleteTargetName: document.getElementById('deleteTargetName'),
   cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
@@ -202,33 +153,59 @@ const DOM = {
   cancelClearBtn: document.getElementById('cancelClearBtn'),
   confirmClearBtn: document.getElementById('confirmClearBtn'),
 
+  // Audit History Modal
+  auditModal: document.getElementById('auditModal'),
+  closeAuditModalBtn: document.getElementById('closeAuditModalBtn'),
+  closeAuditBtn: document.getElementById('closeAuditBtn'),
+  tabAllLogs: document.getElementById('tabAllLogs'),
+  tabDeletedLogs: document.getElementById('tabDeletedLogs'),
+  auditCountAll: document.getElementById('auditCountAll'),
+  auditCountDeleted: document.getElementById('auditCountDeleted'),
+  auditTimeline: document.getElementById('auditTimeline'),
+
   // Toast Container
   toastContainer: document.getElementById('toastContainer')
 };
 
 // ------------------------------------------------------------------------------
-// 4. Initialization & Setup
+// 4. App Initialization & Backend Detection
 // ------------------------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initDateDisplay();
   populateCategorySelect('expense');
-  loadTransactions();
   setupEventListeners();
+
+  await checkBackendStatus();
+  await loadTransactions();
   updateUI();
 });
 
-/** Formats and displays today's date in header and defaults form date */
+/** Detects if the Python SQLite Backend Server is active */
+async function checkBackendStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/api/health`, { method: 'GET', signal: AbortSignal.timeout(1500) });
+    if (res.ok) {
+      isBackendConnected = true;
+      DOM.backendStatusBadge.className = 'backend-badge connected';
+      DOM.backendStatusText.textContent = 'SQLite Database Active';
+    } else {
+      throw new Error('Backend responded with non-200 status');
+    }
+  } catch (err) {
+    isBackendConnected = false;
+    DOM.backendStatusBadge.className = 'backend-badge local-mode';
+    DOM.backendStatusText.textContent = 'LocalStorage Mode';
+  }
+}
+
 function initDateDisplay() {
   const today = new Date();
   const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
   DOM.currentDateText.textContent = today.toLocaleDateString('en-IN', options);
-
-  // Set default date input value to today (YYYY-MM-DD)
   DOM.dateInput.value = today.toISOString().split('T')[0];
 }
 
-/** Theme Initialization (LocalStorage + System Preference Detection) */
 function initTheme() {
   const savedTheme = localStorage.getItem(STORAGE_KEY_THEME);
   if (savedTheme) {
@@ -239,7 +216,6 @@ function initTheme() {
   }
 }
 
-/** Applies theme attribute to document and triggers chart color refresh */
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem(STORAGE_KEY_THEME, theme);
@@ -248,7 +224,6 @@ function applyTheme(theme) {
   }
 }
 
-/** Toggles between Light and Dark mode */
 function toggleTheme() {
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
   const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -257,41 +232,68 @@ function toggleTheme() {
 }
 
 // ------------------------------------------------------------------------------
-// 5. LocalStorage Management
+// 5. Data Layer (Dual Mode: SQLite Backend API + LocalStorage)
 // ------------------------------------------------------------------------------
 
-/** Loads transactions from LocalStorage or sets default sample data */
-function loadTransactions() {
+/** Loads transactions from API (if connected) or LocalStorage */
+async function loadTransactions() {
+  if (isBackendConnected) {
+    try {
+      const res = await fetch(`${API_BASE}/api/transactions`);
+      const json = await res.json();
+      if (json.status === 'success') {
+        transactions = json.data;
+        return;
+      }
+    } catch (e) {
+      console.warn('API error, falling back to LocalStorage:', e);
+    }
+  }
+
+  // Fallback to LocalStorage
   try {
     const rawData = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
     if (rawData) {
       transactions = JSON.parse(rawData);
     } else {
-      // First visit: provide rich sample data for immediate visual engagement
       transactions = [...SAMPLE_TRANSACTIONS];
-      saveTransactions();
+      saveLocalTransactions();
     }
   } catch (error) {
-    console.error('Failed to parse transactions from LocalStorage:', error);
     transactions = [];
   }
 }
 
-/** Persists current transactions array into LocalStorage */
-function saveTransactions() {
+/** LocalStorage sync helper */
+function saveLocalTransactions() {
   try {
     localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(transactions));
-  } catch (error) {
-    console.error('Failed to save transactions to LocalStorage:', error);
-    showToast('Failed to save transaction to storage.', 'error');
+  } catch (e) {
+    console.error('LocalStorage write failed:', e);
+  }
+}
+
+/** Logs local audit entry if in LocalStorage mode */
+function logLocalAudit(action, transactionId, details) {
+  try {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY_AUDIT_LOGS) || '[]');
+    logs.unshift({
+      id: Date.now(),
+      action,
+      transaction_id: transactionId,
+      details,
+      timestamp: new Date().toLocaleString('en-IN')
+    });
+    localStorage.setItem(STORAGE_KEY_AUDIT_LOGS, JSON.stringify(logs.slice(0, 100)));
+  } catch (e) {
+    console.error('Audit logging failed:', e);
   }
 }
 
 // ------------------------------------------------------------------------------
-// 6. UI Updates & Overview Calculation
+// 6. UI Calculations & Rendering
 // ------------------------------------------------------------------------------
 
-/** Central function to refresh all UI components */
 function updateUI() {
   calculateAndRenderOverview();
   renderCategoryFilterOptions();
@@ -299,14 +301,13 @@ function updateUI() {
   updateCharts();
 }
 
-/** Calculates total balance, income, expenses, and savings rate */
 function calculateAndRenderOverview() {
   let incomeTotal = 0;
   let expenseTotal = 0;
   let incomeCount = 0;
   let expenseCount = 0;
 
-  const currentMonthKey = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
   let currentMonthExpense = 0;
 
   transactions.forEach((tx) => {
@@ -326,7 +327,6 @@ function calculateAndRenderOverview() {
   const netBalance = incomeTotal - expenseTotal;
   const savingsRate = incomeTotal > 0 ? Math.max(0, Math.round(((incomeTotal - expenseTotal) / incomeTotal) * 100)) : 0;
 
-  // Render Stats Cards
   DOM.totalBalance.textContent = formatCurrency(netBalance);
   DOM.totalIncome.textContent = formatCurrency(incomeTotal);
   DOM.totalExpenses.textContent = formatCurrency(expenseTotal);
@@ -336,7 +336,6 @@ function calculateAndRenderOverview() {
   DOM.expenseCount.textContent = `${expenseCount} transaction${expenseCount === 1 ? '' : 's'}`;
   DOM.monthlyExpenseText.textContent = `This month: ${formatCurrency(currentMonthExpense)}`;
 
-  // Update Balance Status Badge
   if (netBalance >= 0) {
     DOM.balanceBadge.className = 'stat-badge';
     DOM.balanceBadge.innerHTML = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> <span>Net Positive</span>';
@@ -346,7 +345,6 @@ function calculateAndRenderOverview() {
   }
 }
 
-/** Formats a numeric value into standard Indian Rupee currency string */
 function formatCurrency(amount) {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -356,7 +354,6 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
-/** Formats YYYY-MM-DD date string to readable Indian date (e.g. 15 Aug 2024) */
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const dateObj = new Date(dateStr + 'T00:00:00');
@@ -368,10 +365,9 @@ function formatDate(dateStr) {
 }
 
 // ------------------------------------------------------------------------------
-// 7. Transaction Form Handling & Validation
+// 7. Form Operations (Add Transaction)
 // ------------------------------------------------------------------------------
 
-/** Switches category select dropdown options based on selected Type */
 function populateCategorySelect(type) {
   const categories = CATEGORIES[type] || [];
   DOM.categorySelect.innerHTML = '';
@@ -391,7 +387,6 @@ function populateCategorySelect(type) {
   });
 }
 
-/** Handles type segment toggle (Expense vs Income) */
 function setTransactionType(type) {
   if (type === 'expense') {
     DOM.typeExpenseRadio.checked = true;
@@ -407,10 +402,8 @@ function setTransactionType(type) {
   clearValidationErrors();
 }
 
-/** Form submission handler with field validation */
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
-
   clearValidationErrors();
 
   const description = DOM.descriptionInput.value.trim();
@@ -421,7 +414,6 @@ function handleFormSubmit(e) {
 
   let isValid = true;
 
-  // Validation: Description
   if (!description) {
     showFieldError(DOM.descriptionInput, DOM.descriptionError, 'Please enter a description.');
     isValid = false;
@@ -430,7 +422,6 @@ function handleFormSubmit(e) {
     isValid = false;
   }
 
-  // Validation: Amount
   if (isNaN(amount) || amount <= 0) {
     showFieldError(DOM.amountInput, DOM.amountError, 'Please enter a valid amount greater than ₹0.');
     isValid = false;
@@ -439,13 +430,11 @@ function handleFormSubmit(e) {
     isValid = false;
   }
 
-  // Validation: Category
   if (!category) {
     showFieldError(DOM.categorySelect, DOM.categoryError, 'Please select a category.');
     isValid = false;
   }
 
-  // Validation: Date
   if (!date) {
     showFieldError(DOM.dateInput, DOM.dateError, 'Please select a date.');
     isValid = false;
@@ -453,9 +442,8 @@ function handleFormSubmit(e) {
 
   if (!isValid) return;
 
-  // Create new transaction object
-  const newTransaction = {
-    id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+  const newTx = {
+    id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
     description,
     amount,
     type,
@@ -463,18 +451,37 @@ function handleFormSubmit(e) {
     date
   };
 
-  // Add to state and save
-  transactions.unshift(newTransaction);
-  saveTransactions();
+  if (isBackendConnected) {
+    try {
+      const res = await fetch(`${API_BASE}/api/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTx)
+      });
+      if (res.ok) {
+        await loadTransactions();
+      } else {
+        throw new Error('API save failed');
+      }
+    } catch (err) {
+      console.warn('Backend save error, using LocalStorage:', err);
+      transactions.unshift(newTx);
+      saveLocalTransactions();
+      logLocalAudit('CREATE', newTx.id, newTx);
+    }
+  } else {
+    transactions.unshift(newTx);
+    saveLocalTransactions();
+    logLocalAudit('CREATE', newTx.id, newTx);
+  }
 
-  // Reset form inputs except date & type
   DOM.descriptionInput.value = '';
   DOM.amountInput.value = '';
   DOM.categorySelect.selectedIndex = 0;
   DOM.descriptionInput.focus();
 
   updateUI();
-  showToast(`Added ${type === 'income' ? 'income' : 'expense'}: "${description}" (${formatCurrency(amount)})`, 'success');
+  showToast(`Added ${type}: "${description}" (${formatCurrency(amount)})`, 'success');
 }
 
 function showFieldError(inputEl, errorEl, message) {
@@ -494,16 +501,15 @@ function clearValidationErrors() {
 }
 
 // ------------------------------------------------------------------------------
-// 8. Filter, Search & Transaction Rendering
+// 8. Transaction List & Filtering
 // ------------------------------------------------------------------------------
 
-/** Populates the category filter dropdown dynamically with available categories */
 function renderCategoryFilterOptions() {
   const currentSelection = DOM.categoryFilter.value;
   DOM.categoryFilter.innerHTML = '<option value="all">All Categories</option>';
 
-  const allAvailableCategories = [...CATEGORIES.expense, ...CATEGORIES.income];
-  const uniqueCategories = Array.from(new Set(allAvailableCategories.map((c) => c.name)));
+  const allCategories = [...CATEGORIES.expense, ...CATEGORIES.income];
+  const uniqueCategories = Array.from(new Set(allCategories.map((c) => c.name)));
 
   uniqueCategories.forEach((catName) => {
     const opt = document.createElement('option');
@@ -519,14 +525,12 @@ function renderCategoryFilterOptions() {
   }
 }
 
-/** Filters, sorts, and renders the transaction list */
 function renderTransactionList() {
   const filtered = getFilteredTransactions();
 
   DOM.transactionCountBadge.textContent = `${transactions.length} Record${transactions.length === 1 ? '' : 's'}`;
   DOM.filteredSummaryText.textContent = `Showing ${filtered.length} of ${transactions.length} transaction${transactions.length === 1 ? '' : 's'}`;
 
-  // Clear list
   DOM.transactionList.innerHTML = '';
 
   if (filtered.length === 0) {
@@ -556,13 +560,11 @@ function renderTransactionList() {
   });
 }
 
-/** Generates DOM item for a single transaction */
 function createTransactionElement(tx) {
   const li = document.createElement('li');
   li.className = 'transaction-item';
   li.setAttribute('data-id', tx.id);
 
-  // Retrieve category style metadata
   const catConfig = getCategoryConfig(tx.type, tx.category);
   const isIncome = tx.type === 'income';
 
@@ -589,7 +591,6 @@ function createTransactionElement(tx) {
     </div>
   `;
 
-  // Bind delete button
   const deleteBtn = li.querySelector('.delete-btn');
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -599,7 +600,6 @@ function createTransactionElement(tx) {
   return li;
 }
 
-/** Looks up icon and color definitions for category */
 function getCategoryConfig(type, categoryName) {
   const list = CATEGORIES[type] || [];
   const found = list.find((c) => c.name.toLowerCase() === (categoryName || '').toLowerCase());
@@ -610,11 +610,9 @@ function getCategoryConfig(type, categoryName) {
     : { icon: 'fa-shapes', color: '#64748b', bg: 'rgba(100, 116, 139, 0.15)' };
 }
 
-/** Filters and sorts transactions array based on active filter state */
 function getFilteredTransactions() {
   let result = [...transactions];
 
-  // 1. Search Query Filter
   if (filterState.search) {
     const query = filterState.search.toLowerCase();
     result = result.filter((tx) => {
@@ -625,17 +623,14 @@ function getFilteredTransactions() {
     });
   }
 
-  // 2. Type Filter (All / Income / Expense)
   if (filterState.type !== 'all') {
     result = result.filter((tx) => tx.type === filterState.type);
   }
 
-  // 3. Category Filter
   if (filterState.category !== 'all') {
     result = result.filter((tx) => tx.category === filterState.category);
   }
 
-  // 4. Sorting
   switch (filterState.sortBy) {
     case 'date-desc':
       result.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -657,16 +652,14 @@ function getFilteredTransactions() {
 }
 
 // ------------------------------------------------------------------------------
-// 9. Chart.js Analytics Visualization
+// 9. Chart Analytics
 // ------------------------------------------------------------------------------
 
-/** Updates both Category and Monthly charts */
 function updateCharts() {
   updateCategoryChart();
   updateMonthlyChart();
 }
 
-/** Renders or updates Spending by Category doughnut chart */
 function updateCategoryChart() {
   const expenseTransactions = transactions.filter((tx) => tx.type === 'expense');
 
@@ -683,7 +676,6 @@ function updateCategoryChart() {
   DOM.categoryChartContainer.style.display = 'block';
   DOM.categoryChartEmpty.style.display = 'none';
 
-  // Aggregate expenses per category
   const categoryTotals = {};
   expenseTransactions.forEach((tx) => {
     const cat = tx.category || 'Other Expense';
@@ -692,10 +684,7 @@ function updateCategoryChart() {
 
   const labels = Object.keys(categoryTotals);
   const data = Object.values(categoryTotals);
-  const backgroundColors = labels.map((label) => {
-    const config = getCategoryConfig('expense', label);
-    return config.color;
-  });
+  const backgroundColors = labels.map((label) => getCategoryConfig('expense', label).color);
 
   const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
   const textColor = isDarkMode ? '#f8fafc' : '#0f172a';
@@ -711,16 +700,8 @@ function updateCategoryChart() {
     categoryChartInstance = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: labels,
-        datasets: [
-          {
-            data: data,
-            backgroundColor: backgroundColors,
-            borderWidth: 2,
-            borderColor: isDarkMode ? '#131b26' : '#ffffff',
-            hoverOffset: 6
-          }
-        ]
+        labels,
+        datasets: [{ data, backgroundColor: backgroundColors, borderWidth: 2, borderColor: isDarkMode ? '#131b26' : '#ffffff', hoverOffset: 6 }]
       },
       options: {
         responsive: true,
@@ -729,24 +710,14 @@ function updateCategoryChart() {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: {
-              boxWidth: 12,
-              padding: 14,
-              font: {
-                family: "'Inter', sans-serif",
-                size: 11,
-                weight: '500'
-              },
-              color: textColor
-            }
+            labels: { boxWidth: 12, padding: 14, font: { family: "'Inter', sans-serif", size: 11, weight: '500' }, color: textColor }
           },
           tooltip: {
             callbacks: {
-              label: function (context) {
-                const value = context.raw || 0;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percent = Math.round((value / total) * 100);
-                return ` ${context.label}: ${formatCurrency(value)} (${percent}%)`;
+              label: function (ctx) {
+                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const percent = Math.round(((ctx.raw || 0) / total) * 100);
+                return ` ${ctx.label}: ${formatCurrency(ctx.raw)} (${percent}%)`;
               }
             }
           }
@@ -756,7 +727,6 @@ function updateCategoryChart() {
   }
 }
 
-/** Renders or updates Monthly expense summary bar chart */
 function updateMonthlyChart() {
   const expenseTransactions = transactions.filter((tx) => tx.type === 'expense');
 
@@ -773,18 +743,14 @@ function updateMonthlyChart() {
   DOM.monthlyChartContainer.style.display = 'block';
   DOM.monthlyChartEmpty.style.display = 'none';
 
-  // Group by Month (e.g., '2024-08')
   const monthlyData = {};
   expenseTransactions.forEach((tx) => {
     if (!tx.date) return;
-    const monthKey = tx.date.slice(0, 7); // YYYY-MM
+    const monthKey = tx.date.slice(0, 7);
     monthlyData[monthKey] = (monthlyData[monthKey] || 0) + Number(tx.amount);
   });
 
-  // Sort months chronologically
   const sortedMonthKeys = Object.keys(monthlyData).sort();
-
-  // Format month labels (e.g. 'Aug 2024')
   const labels = sortedMonthKeys.map((key) => {
     const [year, month] = key.split('-');
     const dateObj = new Date(year, parseInt(month, 10) - 1, 1);
@@ -810,54 +776,26 @@ function updateMonthlyChart() {
     monthlyChartInstance = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Monthly Expense',
-            data: data,
-            backgroundColor: '#0d9488',
-            borderRadius: 6,
-            maxBarThickness: 36
-          }
-        ]
+        labels,
+        datasets: [{ label: 'Monthly Expense', data, backgroundColor: '#0d9488', borderRadius: 6, maxBarThickness: 36 }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-          x: {
-            grid: {
-              display: false
-            },
-            ticks: {
-              color: textColor,
-              font: { family: "'Inter', sans-serif", size: 11 }
-            }
-          },
+          x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Inter', sans-serif", size: 11 } } },
           y: {
-            grid: {
-              color: gridColor
-            },
+            grid: { color: gridColor },
             ticks: {
               color: textColor,
               font: { family: "'Inter', sans-serif", size: 11 },
-              callback: function (val) {
-                return '₹' + (val >= 1000 ? val / 1000 + 'k' : val);
-              }
+              callback: (val) => '₹' + (val >= 1000 ? val / 1000 + 'k' : val)
             }
           }
         },
         plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                return ` Total Expense: ${formatCurrency(context.raw)}`;
-              }
-            }
-          }
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => ` Total Expense: ${formatCurrency(ctx.raw)}` } }
         }
       }
     });
@@ -865,10 +803,9 @@ function updateMonthlyChart() {
 }
 
 // ------------------------------------------------------------------------------
-// 10. Confirmation Modals & Delete Handling
+// 10. Deletions, Reset & Audit Trail
 // ------------------------------------------------------------------------------
 
-/** Opens the custom delete confirmation modal */
 function promptDeleteTransaction(id) {
   const targetTx = transactions.find((t) => t.id === id);
   if (!targetTx) return;
@@ -879,54 +816,196 @@ function promptDeleteTransaction(id) {
   DOM.confirmDeleteBtn.focus();
 }
 
-/** Closes the delete confirmation modal */
 function closeDeleteModal() {
   pendingDeleteId = null;
   DOM.deleteModal.style.display = 'none';
 }
 
-/** Executes deletion of the target transaction */
-function confirmDeleteTransaction() {
+async function confirmDeleteTransaction() {
   if (!pendingDeleteId) return;
 
   const targetTx = transactions.find((t) => t.id === pendingDeleteId);
-  transactions = transactions.filter((t) => t.id !== pendingDeleteId);
-  saveTransactions();
+  const deletedId = pendingDeleteId;
+
+  if (isBackendConnected) {
+    try {
+      const res = await fetch(`${API_BASE}/api/transactions/${deletedId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadTransactions();
+      } else {
+        throw new Error('API delete failed');
+      }
+    } catch (e) {
+      console.warn('Backend delete error, falling back locally:', e);
+      transactions = transactions.filter((t) => t.id !== deletedId);
+      saveLocalTransactions();
+      if (targetTx) logLocalAudit('DELETE', deletedId, targetTx);
+    }
+  } else {
+    transactions = transactions.filter((t) => t.id !== deletedId);
+    saveLocalTransactions();
+    if (targetTx) logLocalAudit('DELETE', deletedId, targetTx);
+  }
+
   closeDeleteModal();
   updateUI();
-
-  showToast(`Deleted transaction "${targetTx ? targetTx.description : ''}"`, 'info');
+  showToast(`Deleted & archived: "${targetTx ? targetTx.description : ''}"`, 'info');
 }
 
-/** Opens clear all confirmation modal */
 function promptClearAll() {
   if (transactions.length === 0) {
-    showToast('No transactions to clear.', 'info');
+    showToast('No active transactions to reset.', 'info');
     return;
   }
   DOM.clearAllModal.style.display = 'flex';
   DOM.confirmClearBtn.focus();
 }
 
-/** Closes clear all modal */
 function closeClearModal() {
   DOM.clearAllModal.style.display = 'none';
 }
 
-/** Resets all transaction data */
-function confirmClearAll() {
-  transactions = [];
-  saveTransactions();
+async function confirmClearAll() {
+  if (isBackendConnected) {
+    try {
+      await fetch(`${API_BASE}/api/reset`, { method: 'POST' });
+      await loadTransactions();
+    } catch (e) {
+      transactions = [];
+      saveLocalTransactions();
+      logLocalAudit('RESET', null, { count: transactions.length });
+    }
+  } else {
+    transactions = [];
+    saveLocalTransactions();
+    logLocalAudit('RESET', null, { count: transactions.length });
+  }
+
   closeClearModal();
   updateUI();
-  showToast('All transaction records have been reset.', 'info');
+  showToast('All transactions archived into change history.', 'info');
 }
 
 // ------------------------------------------------------------------------------
-// 11. CSV Export Feature
+// 11. Activity History & Audit Log Modal
 // ------------------------------------------------------------------------------
 
-/** Exports all transactions to a downloadable CSV file */
+async function openAuditModal() {
+  DOM.auditModal.style.display = 'flex';
+  await refreshAuditLogs();
+}
+
+function closeAuditModal() {
+  DOM.auditModal.style.display = 'none';
+}
+
+async function refreshAuditLogs() {
+  let logs = [];
+
+  if (isBackendConnected) {
+    try {
+      const res = await fetch(`${API_BASE}/api/audit-logs`);
+      const json = await res.json();
+      if (json.status === 'success') {
+        logs = json.data;
+      }
+    } catch (e) {
+      logs = JSON.parse(localStorage.getItem(STORAGE_KEY_AUDIT_LOGS) || '[]');
+    }
+  } else {
+    logs = JSON.parse(localStorage.getItem(STORAGE_KEY_AUDIT_LOGS) || '[]');
+  }
+
+  auditLogs = logs;
+  const deletedCount = logs.filter((l) => l.action === 'DELETE').length;
+
+  DOM.auditCountAll.textContent = logs.length;
+  DOM.auditCountDeleted.textContent = deletedCount;
+
+  renderAuditTimeline();
+}
+
+function renderAuditTimeline() {
+  DOM.auditTimeline.innerHTML = '';
+
+  const displayLogs = activeAuditTab === 'deleted'
+    ? auditLogs.filter((l) => l.action === 'DELETE')
+    : auditLogs;
+
+  if (displayLogs.length === 0) {
+    DOM.auditTimeline.innerHTML = `
+      <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <i class="fa-solid fa-clock-rotate-left" style="font-size: 2rem; opacity: 0.5; margin-bottom: 0.5rem;"></i>
+        <p>No ${activeAuditTab === 'deleted' ? 'deleted transactions' : 'audit logs'} recorded yet.</p>
+      </div>
+    `;
+    return;
+  }
+
+  displayLogs.forEach((log) => {
+    const item = document.createElement('div');
+    item.className = 'audit-item';
+
+    const actionBadgeClass =
+      log.action === 'CREATE'
+        ? 'badge-create'
+        : log.action === 'DELETE'
+        ? 'badge-delete'
+        : log.action === 'RESTORE'
+        ? 'badge-restore'
+        : 'badge-reset';
+
+    const details = typeof log.details === 'object' ? log.details : {};
+    const desc = details.description || (log.action === 'RESET' ? 'Reset All Transactions' : 'Transaction Entry');
+    const amtStr = details.amount ? ` • ${formatCurrency(details.amount)}` : '';
+    const catStr = details.category ? ` (${details.category})` : '';
+
+    item.innerHTML = `
+      <div class="audit-left">
+        <span class="audit-badge ${actionBadgeClass}">${log.action}</span>
+        <div class="audit-info">
+          <span class="audit-desc">${escapeHtml(desc)}${catStr}${amtStr}</span>
+          <span class="audit-time">${escapeHtml(log.timestamp || '')}</span>
+        </div>
+      </div>
+      ${
+        log.action === 'DELETE' && isBackendConnected && log.transaction_id
+          ? `<button class="restore-btn" data-id="${log.transaction_id}" title="Restore transaction">
+              <i class="fa-solid fa-rotate-left"></i> Restore
+             </button>`
+          : ''
+      }
+    `;
+
+    const restoreBtn = item.querySelector('.restore-btn');
+    if (restoreBtn) {
+      restoreBtn.addEventListener('click', async () => {
+        await restoreDeletedTransaction(log.transaction_id);
+      });
+    }
+
+    DOM.auditTimeline.appendChild(item);
+  });
+}
+
+async function restoreDeletedTransaction(id) {
+  try {
+    const res = await fetch(`${API_BASE}/api/transactions/restore/${id}`, { method: 'POST' });
+    if (res.ok) {
+      showToast('Transaction restored successfully!', 'success');
+      await loadTransactions();
+      await refreshAuditLogs();
+      updateUI();
+    }
+  } catch (e) {
+    showToast('Failed to restore transaction.', 'error');
+  }
+}
+
+// ------------------------------------------------------------------------------
+// 12. CSV Export & Toast
+// ------------------------------------------------------------------------------
+
 function exportTransactionsCSV() {
   if (transactions.length === 0) {
     showToast('No transactions available to export.', 'info');
@@ -944,10 +1023,8 @@ function exportTransactionsCSV() {
   ]);
 
   const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-  const encodedUri = encodeURI(csvContent);
-
   const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
+  link.setAttribute('href', encodeURI(csvContent));
   link.setAttribute('download', `Expense_Tracker_Export_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
@@ -956,21 +1033,10 @@ function exportTransactionsCSV() {
   showToast('Exported transactions to CSV successfully!', 'success');
 }
 
-// ------------------------------------------------------------------------------
-// 12. Toast Notification Feedback System
-// ------------------------------------------------------------------------------
-
-/** Displays accessible non-intrusive toast alert */
 function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-
-  const iconClass =
-    type === 'success'
-      ? 'fa-circle-check'
-      : type === 'error'
-      ? 'fa-circle-exclamation'
-      : 'fa-circle-info';
+  const iconClass = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
 
   toast.innerHTML = `
     <i class="fa-solid ${iconClass} toast-icon" aria-hidden="true"></i>
@@ -978,16 +1044,12 @@ function showToast(message, type = 'info') {
   `;
 
   DOM.toastContainer.appendChild(toast);
-
   setTimeout(() => {
     toast.classList.add('toast-hide');
-    setTimeout(() => {
-      if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 250);
+    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 250);
   }, 3200);
 }
 
-/** Escapes HTML characters to prevent XSS injection */
 function escapeHtml(string) {
   const div = document.createElement('div');
   div.textContent = string;
@@ -995,29 +1057,23 @@ function escapeHtml(string) {
 }
 
 // ------------------------------------------------------------------------------
-// 13. Event Listeners Setup
+// 13. Event Listeners
 // ------------------------------------------------------------------------------
+
 function setupEventListeners() {
-  // Theme Toggle
   DOM.themeToggleBtn.addEventListener('click', toggleTheme);
 
-  // Type Selector Toggle
   DOM.typeExpenseRadio.addEventListener('change', () => setTransactionType('expense'));
   DOM.typeIncomeRadio.addEventListener('change', () => setTransactionType('income'));
   DOM.expenseTypeLabel.addEventListener('click', () => setTransactionType('expense'));
   DOM.incomeTypeLabel.addEventListener('click', () => setTransactionType('income'));
 
-  // Form Submit
   DOM.form.addEventListener('submit', handleFormSubmit);
 
-  // Clear Form Validation on Input
   [DOM.descriptionInput, DOM.amountInput, DOM.categorySelect, DOM.dateInput].forEach((input) => {
-    input.addEventListener('input', () => {
-      input.classList.remove('input-error');
-    });
+    input.addEventListener('input', () => input.classList.remove('input-error'));
   });
 
-  // Search Input
   DOM.searchInput.addEventListener('input', (e) => {
     filterState.search = e.target.value.trim();
     DOM.clearSearchBtn.style.display = filterState.search ? 'block' : 'none';
@@ -1032,7 +1088,6 @@ function setupEventListeners() {
     DOM.searchInput.focus();
   });
 
-  // Type Filter Pills
   [
     { btn: DOM.filterAllBtn, type: 'all' },
     { btn: DOM.filterIncomeBtn, type: 'income' },
@@ -1046,22 +1101,17 @@ function setupEventListeners() {
     });
   });
 
-  // Category Filter Select
   DOM.categoryFilter.addEventListener('change', (e) => {
     filterState.category = e.target.value;
     renderTransactionList();
   });
 
-  // Sort Select
   DOM.sortBySelect.addEventListener('change', (e) => {
     filterState.sortBy = e.target.value;
     renderTransactionList();
   });
 
-  // Empty state buttons
-  DOM.emptyStateActionBtn.addEventListener('click', () => {
-    DOM.descriptionInput.focus();
-  });
+  DOM.emptyStateActionBtn.addEventListener('click', () => DOM.descriptionInput.focus());
 
   DOM.resetFiltersBtn.addEventListener('click', () => {
     DOM.searchInput.value = '';
@@ -1079,10 +1129,15 @@ function setupEventListeners() {
     renderTransactionList();
   });
 
-  // Header Actions
-  DOM.sampleDataBtn.addEventListener('click', () => {
-    transactions = [...SAMPLE_TRANSACTIONS];
-    saveTransactions();
+  DOM.sampleDataBtn.addEventListener('click', async () => {
+    if (isBackendConnected) {
+      await fetch(`${API_BASE}/api/sample-data`, { method: 'POST' });
+      await loadTransactions();
+    } else {
+      transactions = [...SAMPLE_TRANSACTIONS];
+      saveLocalTransactions();
+      logLocalAudit('SAMPLE_DATA', null, { count: transactions.length });
+    }
     updateUI();
     showToast('Loaded demo sample transactions!', 'success');
   });
@@ -1090,26 +1145,41 @@ function setupEventListeners() {
   DOM.exportCsvBtn.addEventListener('click', exportTransactionsCSV);
   DOM.clearAllBtn.addEventListener('click', promptClearAll);
 
-  // Modals Actions
   DOM.cancelDeleteBtn.addEventListener('click', closeDeleteModal);
   DOM.confirmDeleteBtn.addEventListener('click', confirmDeleteTransaction);
   DOM.cancelClearBtn.addEventListener('click', closeClearModal);
   DOM.confirmClearBtn.addEventListener('click', confirmClearAll);
 
-  // Close modals on backdrop click
-  [DOM.deleteModal, DOM.clearAllModal].forEach((modal) => {
+  // Audit History Modal Listeners
+  DOM.auditLogBtn.addEventListener('click', openAuditModal);
+  DOM.closeAuditModalBtn.addEventListener('click', closeAuditModal);
+  DOM.closeAuditBtn.addEventListener('click', closeAuditModal);
+
+  DOM.tabAllLogs.addEventListener('click', () => {
+    DOM.tabAllLogs.classList.add('active');
+    DOM.tabDeletedLogs.classList.remove('active');
+    activeAuditTab = 'all';
+    renderAuditTimeline();
+  });
+
+  DOM.tabDeletedLogs.addEventListener('click', () => {
+    DOM.tabDeletedLogs.classList.add('active');
+    DOM.tabAllLogs.classList.remove('active');
+    activeAuditTab = 'deleted';
+    renderAuditTimeline();
+  });
+
+  [DOM.deleteModal, DOM.clearAllModal, DOM.auditModal].forEach((modal) => {
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.style.display = 'none';
-      }
+      if (e.target === modal) modal.style.display = 'none';
     });
   });
 
-  // Keyboard accessibility for modals (Escape key)
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeDeleteModal();
       closeClearModal();
+      closeAuditModal();
     }
   });
 }

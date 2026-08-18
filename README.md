@@ -1,6 +1,6 @@
-# 💰 Expense Tracker — Personal Finance & Budget Manager
+# 💰 Expense Tracker — Full-Stack Personal Finance & Audit Manager
 
-A modern, responsive, and privacy-focused **Expense Tracker** web application built with pure Vanilla JavaScript, HTML5, CSS3, and LocalStorage. Track income, monitor expenses, visualize spending distributions with interactive charts, and gain actionable financial insights with zero server setup or external database dependencies.
+A modern, responsive, and privacy-focused **Expense Tracker** web application with a **built-in SQLite Backend Server** and change-tracking **Audit Logging Engine**. Track income, log expenses in Indian Rupees (₹), visualize spending distributions with interactive charts, record all modifications (additions, soft-deletions, resets), and restore deleted transactions anytime.
 
 ![Expense Tracker Preview](assets/screenshot.png)
 
@@ -11,6 +11,13 @@ A modern, responsive, and privacy-focused **Expense Tracker** web application bu
 - **💵 Complete Income & Expense Logging:**
   - Track both Income and Expense transactions with description, amount, category, and date.
   - Automatically formats numbers into standard Indian Rupee currency (`₹`).
+- **🗄️ Embedded SQLite Database & Backend API:**
+  - Persistent storage powered by an embedded SQLite database (`database.db`).
+  - Zero-dependency Python backend server (`server.py`) — runs natively on any system without `pip install` or external database configuration.
+- **📜 Change History & Audit Logs (`audit_logs` Table):**
+  - Records every transaction created, deleted, reset, or restored with precise timestamps and details.
+  - **Soft-Delete System:** When you delete a transaction, it is archived into the audit history rather than permanently destroyed.
+  - **One-Click Restore:** Browse deleted transactions in the "Audit History" modal and restore them back to the active list instantly!
 - **📊 Real-time Financial Overview:**
   - Instant balance calculation (`Total Balance = Total Income - Total Expenses`).
   - Total Income and Total Expenses breakdown cards.
@@ -23,64 +30,74 @@ A modern, responsive, and privacy-focused **Expense Tracker** web application bu
   - Quick filter buttons for **All**, **Income**, and **Expense**.
   - Dropdown filter by specific category.
   - Flexible sorting: Newest First, Oldest First, Highest Amount, and Lowest Amount.
-- **💾 100% Client-Side LocalStorage Persistence:**
-  - All transactions and user theme preferences are saved locally in the browser.
-  - No database or backend required — your financial data remains completely private on your device.
+- **🔄 Dual Storage Engine (Hybrid Fallback):**
+  - Automatically connects to the SQLite backend API when `server.py` is running (`🟢 SQLite Database Active`).
+  - Gracefully falls back to browser `LocalStorage` if opened directly as a static file (`💾 LocalStorage Mode`).
 - **🌓 Light & Dark Theme:**
   - Smooth theme switching with automatic system preference detection and LocalStorage persistence.
   - Theme-aware Chart.js components.
-- **🛡️ Custom Confirmation Modals:**
-  - Accessible, keyboard-friendly delete confirmation dialog (with `Escape` key support) to prevent accidental deletions.
-  - Data reset modal with quick reset capabilities.
 - **📥 CSV Data Export:**
   - One-click export of all transactions into a standard `.csv` spreadsheet file.
-- **✨ Sample Data Loader:**
-  - Instant demo data loader for testing and previewing the application without manual entry.
-- **📱 Fully Responsive Design:**
-  - Fluid mobile, tablet, and desktop layouts built with CSS Grid and Flexbox.
-- **♿ Accessible & Keyboard-Friendly:**
-  - ARIA attributes, semantic HTML elements, accessible form focus rings, and screen-reader consideration.
+- **📱 Fully Responsive & Accessible:**
+  - Fluid mobile, tablet, and desktop layouts built with CSS Grid, Flexbox, and keyboard accessibility.
 
 ---
 
 ## 🛠️ Technologies Used
 
-| Technology | Purpose |
-| :--- | :--- |
-| **HTML5** | Semantic structure, accessible dialogs, and clean document layout. |
-| **CSS3** | Modern CSS custom properties (variables), Grid, Flexbox, smooth animations, and responsive media queries. |
-| **Vanilla JavaScript (ES6+)** | State management, DOM manipulation, input validation, and data calculations. |
-| **LocalStorage API** | Browser-level persistence for transaction records and theme preferences. |
-| **[Chart.js](https://www.chartjs.org/) (CDN)** | Lightweight, interactive canvas-based charting for category and monthly analytics. |
-| **[Font Awesome](https://fontawesome.com/) (CDN)** | High quality vector icons for categories and UI controls. |
-| **[Google Fonts](https://fonts.google.com/)** | Clean, modern typography using *Inter* & *Plus Jakarta Sans*. |
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend** | **Python Standard Library** (`http.server`, `sqlite3`, `json`) | Zero-dependency REST API server & database engine |
+| **Database** | **SQLite3** (`database.db`) | ACID-compliant local database storing `transactions` & `audit_logs` |
+| **Frontend Core** | **HTML5 & Vanilla JavaScript (ES6+)** | Semantic structure, dynamic UI updates, dual-mode data layer |
+| **Styling** | **CSS3 (Custom Properties & Grid)** | Modern light/dark design system, responsive breakpoints, animations |
+| **Charts** | **[Chart.js](https://www.chartjs.org/) (CDN)** | Canvas-based doughnut & bar analytics |
+| **Icons & Fonts** | **[Font Awesome](https://fontawesome.com/) & [Google Fonts](https://fonts.google.com/)** | UI icons, Inter & Plus Jakarta Sans typography |
 
 ---
 
-## 📸 Screenshots
+## 🚀 How to Run the Application
 
-### 🖥️ Dashboard Overview (Desktop & Tablet)
-![Expense Tracker Dashboard](assets/screenshot.png)
+### Option 1: Full-Stack Mode with Backend & SQLite Database (Recommended)
 
----
-
-## 🚀 How to Run Locally
-
-Because this application is built entirely with pure client-side web technologies, you do **not** need Node.js, Python, or any web server to run it.
-
-### Method 1: Open Directly in Browser
-1. Clone or download the repository:
-   ```bash
-   git clone https://github.com/your-username/expense-tracker.git
-   cd expense-tracker
+1. Open PowerShell or Command Prompt in the project folder:
+   ```powershell
+   cd "C:\Users\R Hareeswar\.gemini\antigravity\scratch\expense-tracker"
    ```
-2. Double click the `index.html` file or right-click and choose **Open With > Google Chrome** (or any modern web browser like Edge, Firefox, Safari).
+2. Start the backend server:
+   ```powershell
+   python server.py
+   ```
+3. Open your browser at:
+   ```text
+   http://localhost:5000
+   ```
+   *(You will see the green "🟢 SQLite Database Active" badge in the top header).*
 
-### Method 2: Using VS Code Live Server (Optional)
-1. Open the project folder in **Visual Studio Code**.
-2. Install the **Live Server** extension (by Ritwick Dey).
-3. Click **"Go Live"** in the bottom status bar or right-click `index.html` and select **"Open with Live Server"**.
-4. The application will open automatically at `http://127.0.0.1:5500/index.html`.
+---
+
+### Option 2: Standalone Static Mode (No Server / LocalStorage Only)
+
+1. Double-click **`index.html`** or open it in any web browser.
+2. The app will run in offline mode using your browser's LocalStorage.
+
+---
+
+## 🌐 REST API Endpoints
+
+When running `python server.py`, the following REST API endpoints are available:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/transactions` | Retrieve all active transactions |
+| `POST` | `/api/transactions` | Add a new transaction & write `CREATE` audit log |
+| `DELETE` | `/api/transactions/<id>` | Soft-delete a transaction & write `DELETE` audit log |
+| `POST` | `/api/transactions/restore/<id>` | Restore a deleted transaction back to active list |
+| `GET` | `/api/audit-logs` | Retrieve full history of all additions and deletions |
+| `GET` | `/api/deleted-transactions` | Retrieve only deleted transactions (Trash) |
+| `POST` | `/api/reset` | Archive all active transactions & record `RESET` log |
+| `POST` | `/api/sample-data` | Seed demo transactions into database |
+| `GET` | `/api/health` | Health check endpoint |
 
 ---
 
@@ -88,48 +105,28 @@ Because this application is built entirely with pure client-side web technologie
 
 ```text
 expense-tracker/
-├── index.html          # Main HTML5 semantic structure & modal overlays
-├── style.css           # Design tokens, light/dark themes, and responsive styles
-├── script.js           # Core business logic, LocalStorage handlers, and Chart.js setup
-├── README.md           # Project documentation and setup guide
+├── server.py           # Python HTTP server & SQLite REST API handler
+├── database.db         # Auto-generated SQLite database (transactions & audit_logs)
+├── index.html          # Main application UI, stats cards & modal dialogs
+├── style.css           # Modern design system, responsive styles & theme tokens
+├── script.js           # Client-side state manager, API connector & Chart.js logic
+├── LICENSE             # MIT License
+├── README.md           # Documentation & instructions
 └── assets/
     └── screenshot.png  # Application screenshot preview
 ```
 
 ---
 
-## 💡 How LocalStorage Works in This App
-
-This project uses the web browser's native **Web Storage API (`localStorage`)**:
-
-1. **Saving Data:** Every time a transaction is added, deleted, or reset, the JavaScript array is converted to a JSON string using `JSON.stringify()` and stored under the key `'rupeewise_transactions_v1'`.
-   ```javascript
-   localStorage.setItem('rupeewise_transactions_v1', JSON.stringify(transactions));
-   ```
-2. **Retrieving Data:** When the page loads, `localStorage.getItem()` retrieves the stored JSON string, which is deserialized back into a JavaScript object array using `JSON.parse()`.
-3. **Theme Preference:** The user's active theme (`'light'` or `'dark'`) is saved under `'rupeewise_theme_v1'`, ensuring the theme persists across browser restarts.
-4. **Privacy Benefit:** No data is sent over the internet or stored on external servers.
-
----
-
 ## 🔮 Future Improvements
 
-- [ ] Recurring transactions (e.g., monthly subscriptions or rent).
-- [ ] Custom category creation with custom colors and icons.
-- [ ] Date range picker filter (e.g., custom date intervals).
-- [ ] Monthly budget limit goals with progress bars and alerts.
-- [ ] PDF summary report generation.
-- [ ] Multi-currency support (USD `$`, EUR `€`, GBP `£`, etc.).
-
----
-
-## 👤 Author
-
-- **GitHub:** [@your-username](https://github.com/your-username)
-- **LinkedIn:** [Your Name](https://linkedin.com/in/your-profile)
+- [ ] Multi-user authentication & login sessions.
+- [ ] Custom category manager with user-defined icons and colors.
+- [ ] Monthly budget limit goals with threshold alerts.
+- [ ] Export Audit Trail to PDF / CSV.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — you are free to use, modify, and distribute it for personal or commercial projects. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.

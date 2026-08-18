@@ -167,7 +167,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* --------------------------------------------------------------------------
-   3. Header Navigation
+   3. Header Navigation & Status Badge
    -------------------------------------------------------------------------- */
 .app-header {
   background-color: var(--bg-surface);
@@ -202,10 +202,56 @@ h1, h2, h3, h4, h5, h6 {
   flex-shrink: 0;
 }
 
+.brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
 .brand-title {
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+}
+
+.backend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.backend-badge.connected {
+  background-color: var(--income-bg);
+  border-color: var(--income-border);
+  color: var(--income);
+}
+
+.backend-badge.local-mode {
+  background-color: var(--savings-bg);
+  color: var(--savings);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--text-muted);
+}
+
+.backend-badge.connected .status-dot {
+  background-color: var(--income);
+  box-shadow: 0 0 6px var(--income);
+}
+
+.backend-badge.local-mode .status-dot {
+  background-color: var(--savings);
 }
 
 .brand-subtitle {
@@ -1082,7 +1128,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* --------------------------------------------------------------------------
-   11. Modal Dialogs
+   11. Modal Dialogs & Audit Log Timeline
    -------------------------------------------------------------------------- */
 .modal-overlay {
   position: fixed;
@@ -1119,6 +1165,12 @@ h1, h2, h3, h4, h5, h6 {
   animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-card.modal-lg {
+  max-width: 600px;
+  text-align: left;
+  align-items: stretch;
+}
+
 @keyframes scaleIn {
   from {
     transform: scale(0.92);
@@ -1130,6 +1182,35 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+.modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.modal-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.modal-close-icon {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.modal-close-icon:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-card-subtle);
+}
+
 .modal-icon-wrapper {
   width: 52px;
   height: 52px;
@@ -1139,6 +1220,18 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   font-size: 1.5rem;
   margin-bottom: 0.25rem;
+}
+
+.modal-icon-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background-color: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
 }
 
 .modal-danger-icon {
@@ -1167,6 +1260,131 @@ h1, h2, h3, h4, h5, h6 {
 
 .modal-actions .btn {
   flex: 1;
+}
+
+/* Audit Tabs */
+.audit-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--bg-card-subtle);
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.audit-tab {
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: 0.825rem;
+  font-weight: 600;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.audit-tab.active {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+/* Audit Timeline List */
+.audit-list-container {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  margin: 0.5rem 0;
+}
+
+.audit-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.audit-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.825rem;
+}
+
+.audit-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  flex: 1;
+}
+
+.audit-badge {
+  font-size: 0.675rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.audit-badge.badge-create {
+  background-color: var(--income-bg);
+  color: var(--income);
+}
+
+.audit-badge.badge-delete {
+  background-color: var(--expense-bg);
+  color: var(--expense);
+}
+
+.audit-badge.badge-restore {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.audit-badge.badge-reset {
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.audit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.audit-desc {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.audit-time {
+  font-size: 0.725rem;
+  color: var(--text-muted);
+}
+
+.restore-btn {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.restore-btn:hover {
+  background-color: var(--primary);
+  color: #ffffff;
 }
 
 /* --------------------------------------------------------------------------

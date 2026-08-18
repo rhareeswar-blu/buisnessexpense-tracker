@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="A modern, responsive, client-side Expense Tracker built with Vanilla HTML5, CSS3, JavaScript, LocalStorage, and Chart.js." />
+  <meta name="keywords" content="expense tracker, personal finance, budget manager, javascript, localstorage, chartjs" />
+  <meta name="author" content="Expense Tracker" />
+  <title>Expense Tracker — Personal Finance & Budget Manager</title>
+
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome 6.5.1 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Chart.js 4.4.1 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Top Navigation / Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-logo" aria-hidden="true">
+          <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div class="brand-info">
+          <h1 class="brand-title">Expense Tracker</h1>
+          <p class="brand-subtitle">Smart Personal Budget & Expense Manager</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Date Display Badge -->
+        <div class="date-badge" id="currentDateBadge" aria-label="Today's date">
+          <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+          <span id="currentDateText">Today</span>
+        </div>
+
+        <!-- Quick Actions Menu -->
+        <div class="quick-actions">
+          <button id="sampleDataBtn" class="btn btn-secondary btn-sm" title="Load demo sample transactions" aria-label="Load demo sample transactions">
+            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+            <span class="btn-text">Sample Data</span>
+          </button>
+          
+          <button id="exportCsvBtn" class="btn btn-secondary btn-sm" title="Export transactions as CSV file" aria-label="Export transactions as CSV file">
+            <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
+            <span class="btn-text">Export CSV</span>
+          </button>
+
+          <button id="clearAllBtn" class="btn btn-secondary btn-sm btn-danger-hover" title="Clear all stored transactions" aria-label="Clear all transactions">
+            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+            <span class="btn-text">Reset</span>
+          </button>
+        </div>
+
+        <!-- Theme Toggle Button -->
+        <button id="themeToggleBtn" class="theme-toggle" title="Toggle Light/Dark theme" aria-label="Switch between light and dark mode">
+          <i class="fa-solid fa-sun icon-sun" aria-hidden="true"></i>
+          <i class="fa-solid fa-moon icon-moon" aria-hidden="true"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-content">
+      
+      <!-- Section: Summary Stats Overview Cards -->
+      <section class="overview-section" aria-label="Financial Overview Summary">
+        
+        <!-- Total Balance Card -->
+        <div class="stat-card stat-balance" id="balanceCard">
+          <div class="stat-card-header">
+            <span class="stat-label">Total Balance</span>
+            <div class="stat-icon-wrapper balance-icon">
+              <i class="fa-solid fa-indian-rupee-sign" aria-hidden="true"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="totalBalance">₹0.00</div>
+          <div class="stat-footer">
+            <span class="stat-badge" id="balanceBadge">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+              <span id="balanceStatusText">Net Positive</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Total Income Card -->
+        <div class="stat-card stat-income">
+          <div class="stat-card-header">
+            <span class="stat-label">Total Income</span>
+            <div class="stat-icon-wrapper income-icon">
+              <i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="totalIncome">₹0.00</div>
+          <div class="stat-footer">
+            <span class="stat-subtext" id="incomeCount">0 transactions</span>
+          </div>
+        </div>
+
+        <!-- Total Expenses Card -->
+        <div class="stat-card stat-expense">
+          <div class="stat-card-header">
+            <span class="stat-label">Total Expenses</span>
+            <div class="stat-icon-wrapper expense-icon">
+              <i class="fa-solid fa-arrow-trend-down" aria-hidden="true"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="totalExpenses">₹0.00</div>
+          <div class="stat-footer">
+            <span class="stat-subtext" id="expenseCount">0 transactions</span>
+          </div>
+        </div>
+
+        <!-- Savings Rate / Monthly Card -->
+        <div class="stat-card stat-savings">
+          <div class="stat-card-header">
+            <span class="stat-label">Savings Rate</span>
+            <div class="stat-icon-wrapper savings-icon">
+              <i class="fa-solid fa-piggy-bank" aria-hidden="true"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="savingsRate">0%</div>
+          <div class="stat-footer">
+            <span class="stat-subtext" id="monthlyExpenseText">This month: ₹0.00</span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Dashboard Two-Column Grid -->
+      <div class="dashboard-grid">
+        
+        <!-- LEFT COLUMN: Add Transaction Form & Analytics Charts -->
+        <div class="dashboard-column left-column">
+          
+          <!-- Card: Add Transaction Form -->
+          <section class="card form-card" aria-labelledby="formTitle">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-circle-plus card-header-icon" aria-hidden="true"></i>
+                <h2 id="formTitle" class="card-title">Add Transaction</h2>
+              </div>
+            </div>
+
+            <!-- Transaction Form -->
+            <form id="transactionForm" class="transaction-form" novalidate>
+              
+              <!-- Transaction Type Segmented Switch -->
+              <div class="form-group">
+                <label class="form-label">Transaction Type</label>
+                <div class="type-selector" role="radiogroup" aria-label="Transaction Type">
+                  <label class="type-option expense-option active" id="expenseTypeLabel">
+                    <input type="radio" name="transactionType" value="expense" checked id="typeExpense" />
+                    <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
+                    <span>Expense</span>
+                  </label>
+                  <label class="type-option income-option" id="incomeTypeLabel">
+                    <input type="radio" name="transactionType" value="income" id="typeIncome" />
+                    <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+                    <span>Income</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Description Input -->
+              <div class="form-group">
+                <label for="descriptionInput" class="form-label">
+                  Description <span class="required-star">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <i class="fa-solid fa-pen-to-square input-icon" aria-hidden="true"></i>
+                  <input
+                    type="text"
+                    id="descriptionInput"
+                    name="description"
+                    class="form-input"
+                    placeholder="e.g. Grocery Shopping, Netflix, Salary"
+                    autocomplete="off"
+                    required
+                    maxlength="60"
+                  />
+                </div>
+                <div class="error-feedback" id="descriptionError" role="alert" aria-live="polite"></div>
+              </div>
+
+              <!-- Amount & Category Grid -->
+              <div class="form-row-2">
+                <!-- Amount Input -->
+                <div class="form-group">
+                  <label for="amountInput" class="form-label">
+                    Amount (₹) <span class="required-star">*</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <span class="currency-prefix">₹</span>
+                    <input
+                      type="number"
+                      id="amountInput"
+                      name="amount"
+                      class="form-input amount-input"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0.01"
+                      max="100000000"
+                      required
+                    />
+                  </div>
+                  <div class="error-feedback" id="amountError" role="alert" aria-live="polite"></div>
+                </div>
+
+                <!-- Category Select -->
+                <div class="form-group">
+                  <label for="categorySelect" class="form-label">
+                    Category <span class="required-star">*</span>
+                  </label>
+                  <div class="input-wrapper select-wrapper">
+                    <i class="fa-solid fa-tags input-icon" aria-hidden="true"></i>
+                    <select id="categorySelect" name="category" class="form-input form-select" required>
+                      <!-- Dynamically populated based on Income/Expense type -->
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-chevron" aria-hidden="true"></i>
+                  </div>
+                  <div class="error-feedback" id="categoryError" role="alert" aria-live="polite"></div>
+                </div>
+              </div>
+
+              <!-- Date Input -->
+              <div class="form-group">
+                <label for="dateInput" class="form-label">
+                  Date <span class="required-star">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <i class="fa-regular fa-calendar-days input-icon" aria-hidden="true"></i>
+                  <input
+                    type="date"
+                    id="dateInput"
+                    name="date"
+                    class="form-input"
+                    required
+                  />
+                </div>
+                <div class="error-feedback" id="dateError" role="alert" aria-live="polite"></div>
+              </div>
+
+              <!-- Form Submit Button -->
+              <button type="submit" id="submitBtn" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                <span>Add Transaction</span>
+              </button>
+
+            </form>
+          </section>
+
+          <!-- Card: Spending by Category Chart -->
+          <section class="card chart-card" aria-labelledby="chartCategoryTitle">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-chart-pie card-header-icon" aria-hidden="true"></i>
+                <h2 id="chartCategoryTitle" class="card-title">Spending by Category</h2>
+              </div>
+              <span class="chart-badge">Expenses</span>
+            </div>
+            
+            <div class="chart-body">
+              <div class="chart-container" id="categoryChartContainer">
+                <canvas id="categoryChart" aria-label="Doughnut chart of expenses by category" role="img"></canvas>
+              </div>
+              <div class="chart-empty-state" id="categoryChartEmpty">
+                <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+                <p>No expense data yet</p>
+                <small>Add expenses to see category breakdown</small>
+              </div>
+            </div>
+          </section>
+
+          <!-- Card: Monthly Expense Summary Chart -->
+          <section class="card chart-card" aria-labelledby="chartMonthlyTitle">
+            <div class="card-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-chart-column card-header-icon" aria-hidden="true"></i>
+                <h2 id="chartMonthlyTitle" class="card-title">Monthly Expense Summary</h2>
+              </div>
+              <span class="chart-badge">Past Months</span>
+            </div>
+            
+            <div class="chart-body">
+              <div class="chart-container" id="monthlyChartContainer">
+                <canvas id="monthlyChart" aria-label="Bar chart showing monthly expense summary" role="img"></canvas>
+              </div>
+              <div class="chart-empty-state" id="monthlyChartEmpty">
+                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
+                <p>No monthly trends yet</p>
+                <small>Records will appear here as you log transactions</small>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Transaction History, Filters & Search -->
+        <div class="dashboard-column right-column">
+          
+          <section class="card history-card" aria-labelledby="historyTitle">
+            <div class="card-header history-header">
+              <div class="card-title-group">
+                <i class="fa-solid fa-list-check card-header-icon" aria-hidden="true"></i>
+                <h2 id="historyTitle" class="card-title">Transaction History</h2>
+              </div>
+              <div class="count-badge" id="transactionCountBadge" aria-label="Transaction count">
+                0 Records
+              </div>
+            </div>
+
+            <!-- Search and Filter Controls -->
+            <div class="history-controls">
+              
+              <!-- Search Bar -->
+              <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+                <input
+                  type="text"
+                  id="searchInput"
+                  class="search-input"
+                  placeholder="Search description or category..."
+                  aria-label="Search transactions"
+                />
+                <button id="clearSearchBtn" class="clear-search-btn" title="Clear search" aria-label="Clear search input">
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <!-- Filter Bar Row -->
+              <div class="filter-row">
+                
+                <!-- Type Filter Pills -->
+                <div class="type-filter-group" role="group" aria-label="Filter by transaction type">
+                  <button class="filter-pill active" data-type="all" id="filterAll">All</button>
+                  <button class="filter-pill" data-type="income" id="filterIncome">Income</button>
+                  <button class="filter-pill" data-type="expense" id="filterExpense">Expense</button>
+                </div>
+
+                <!-- Category & Sort Dropdowns -->
+                <div class="filter-selects">
+                  <!-- Category Filter -->
+                  <div class="select-wrapper filter-select-wrapper">
+                    <select id="categoryFilter" class="filter-select" aria-label="Filter by category">
+                      <option value="all">All Categories</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-chevron" aria-hidden="true"></i>
+                  </div>
+
+                  <!-- Sort Option -->
+                  <div class="select-wrapper filter-select-wrapper">
+                    <select id="sortBySelect" class="filter-select" aria-label="Sort transactions">
+                      <option value="date-desc">Newest Date</option>
+                      <option value="date-asc">Oldest Date</option>
+                      <option value="amount-desc">Amount: High to Low</option>
+                      <option value="amount-asc">Amount: Low to High</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down select-chevron" aria-hidden="true"></i>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Transaction List Container -->
+            <div class="transaction-list-container">
+              <ul class="transaction-list" id="transactionList" aria-label="Transactions list">
+                <!-- Dynamically populated list items -->
+              </ul>
+
+              <!-- Empty State Container -->
+              <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-state-icon">
+                  <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+                </div>
+                <h3 class="empty-state-title" id="emptyStateTitle">No Transactions Found</h3>
+                <p class="empty-state-description" id="emptyStateDesc">
+                  You don't have any transactions matching your current filters.
+                </p>
+                <div class="empty-state-actions">
+                  <button id="emptyStateActionBtn" class="btn btn-primary btn-sm">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                    <span>Add First Transaction</span>
+                  </button>
+                  <button id="resetFiltersBtn" class="btn btn-secondary btn-sm" style="display: none;">
+                    <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                    <span>Reset Filters</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Transaction List Footer / Summary -->
+            <div class="history-footer">
+              <span id="filteredSummaryText">Showing 0 of 0 transactions</span>
+            </div>
+
+          </section>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- App Footer -->
+    <footer class="app-footer">
+      <p>
+        <strong>Expense Tracker</strong> &bull; Crafted with Vanilla HTML5, CSS3, &amp; JavaScript.
+      </p>
+      <p class="footer-note">
+        All financial data is saved locally on your device via browser LocalStorage.
+      </p>
+    </footer>
+
+  </div>
+
+  <!-- Delete Confirmation Modal Dialog -->
+  <div class="modal-overlay" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDesc" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-icon-wrapper modal-danger-icon">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      </div>
+      <h3 class="modal-title" id="deleteModalTitle">Delete Transaction?</h3>
+      <p class="modal-desc" id="deleteModalDesc">
+        Are you sure you want to delete <strong id="deleteTargetName">this transaction</strong>? This action cannot be reversed.
+      </p>
+      <div class="modal-actions">
+        <button id="cancelDeleteBtn" class="btn btn-secondary">
+          Cancel
+        </button>
+        <button id="confirmDeleteBtn" class="btn btn-danger">
+          <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+          <span>Yes, Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset / Clear All Confirmation Modal Dialog -->
+  <div class="modal-overlay" id="clearAllModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle" aria-describedby="clearModalDesc" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-icon-wrapper modal-danger-icon">
+        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+      </div>
+      <h3 class="modal-title" id="clearModalTitle">Reset All Transactions?</h3>
+      <p class="modal-desc" id="clearModalDesc">
+        This will permanently remove all transactions from LocalStorage. Are you sure you want to reset everything?
+      </p>
+      <div class="modal-actions">
+        <button id="cancelClearBtn" class="btn btn-secondary">
+          Cancel
+        </button>
+        <button id="confirmClearBtn" class="btn btn-danger">
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+          <span>Reset All Data</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notification System -->
+  <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Main Application Script -->
+  <script src="script.js"></script>
+</body>
+</html>

@@ -24,8 +24,11 @@ DB_FILE = os.path.join(BASE_DIR, 'database.db')
 # ----------------------------------------------------------------------------
 
 def get_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, timeout=30.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA synchronous = NORMAL;")
+    conn.execute("PRAGMA busy_timeout = 30000;")
     return conn
 
 def init_db():
@@ -47,6 +50,17 @@ def init_db():
             deleted_reason TEXT DEFAULT 'Deleted by user'
         )
     ''')
+
+    # Ensure schema migrations for existing database files
+    try:
+        cursor.execute("ALTER TABLE transactions ADD COLUMN deleted_reason TEXT DEFAULT 'Deleted by user'")
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE transactions ADD COLUMN deleted_at TEXT DEFAULT NULL")
+    except Exception:
+        pass
 
     # 2. Immutable Audit Logs Table (Full ledger of all activities)
     cursor.execute('''
@@ -108,8 +122,17 @@ def seed_business_sample_data(conn):
     cursor = conn.cursor()
     for tx in samples:
         cursor.execute('''
-            INSERT OR IGNORE INTO transactions (id, description, amount, type, category, date)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO transactions (id, description, amount, type, category, date, is_deleted, deleted_at, deleted_reason)
+            VALUES (?, ?, ?, ?, ?, ?, 0, NULL, NULL)
+            ON CONFLICT(id) DO UPDATE SET
+                description = excluded.description,
+                amount = excluded.amount,
+                type = excluded.type,
+                category = excluded.category,
+                date = excluded.date,
+                is_deleted = 0,
+                deleted_at = NULL,
+                deleted_reason = NULL
         ''', tx)
         log_audit(conn, 'CREATE', tx[0], {
             'description': tx[1],
@@ -117,7 +140,7 @@ def seed_business_sample_data(conn):
             'type': tx[3],
             'category': tx[4],
             'date': tx[5],
-            'note': 'Initial Business Seed'
+            'note': 'Business Sample Dataset'
         })
     conn.commit()
 
@@ -135,8 +158,10 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Connection', 'close')
         self.end_headers()
         self.wfile.write(response_bytes)
+        self.wfile.flush()
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -146,291 +171,341 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        parsed = urlparse(self.path)
-        path = parsed.path
-        query = parse_qs(parsed.query)
+        try:
+            parsed = urlparse(self.path)
+            path = parsed.path
+            query = parse_qs(parsed.query)
 
-        # 1. Health Status
-        if path == '/api/health':
-            self.send_json_response(200, {'status': 'online', 'service': 'Business Expense Tracker', 'db': 'SQLite active'})
-            return
+            # 1. Health Status
+            if path == '/api/health':
+                self.send_json_response(200, {'status': 'online', 'service': 'Business Expense Tracker', 'db': 'SQLite active'})
+                return
 
-        # 2. Get Active Transactions
-        elif path == '/api/transactions':
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT id, description, amount, type, category, date, created_at
-                FROM transactions
-                WHERE is_deleted = 0
-                ORDER BY date DESC, created_at DESC
-            ''')
-            rows = [dict(r) for r in cursor.fetchall()]
-            conn.close()
-            self.send_json_response(200, {'status': 'success', 'data': rows})
-            return
-
-        # 3. Get Business Profile
-        elif path == '/api/business-profile':
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM business_profile WHERE id = 1')
-            profile = dict(cursor.fetchone())
-            conn.close()
-            self.send_json_response(200, {'status': 'success', 'data': profile})
-            return
-
-        # 4. Admin API: Full Audit Log Ledger
-        elif path == '/api/admin/audit-logs':
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT id, action, transaction_id, details, timestamp
-                FROM audit_logs
-                ORDER BY id DESC
-                LIMIT 200
-            ''')
-            rows = []
-            for r in cursor.fetchall():
-                item = dict(r)
+            # 2. Get Active Transactions
+            elif path == '/api/transactions':
+                conn = get_db()
                 try:
-                    item['details'] = json.loads(item['details'])
-                except Exception:
-                    pass
-                rows.append(item)
-            conn.close()
-            self.send_json_response(200, {'status': 'success', 'data': rows})
-            return
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        SELECT id, description, amount, type, category, date, created_at
+                        FROM transactions
+                        WHERE is_deleted = 0
+                        ORDER BY date DESC, created_at DESC
+                    ''')
+                    rows = [dict(r) for r in cursor.fetchall()]
+                finally:
+                    conn.close()
+                self.send_json_response(200, {'status': 'success', 'data': rows})
+                return
 
-        # 5. Admin API: Get All Deleted / Archived Transactions (Immutable Trash)
-        elif path == '/api/admin/deleted':
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT id, description, amount, type, category, date, deleted_at, deleted_reason
-                FROM transactions
-                WHERE is_deleted = 1
-                ORDER BY deleted_at DESC
-            ''')
-            rows = [dict(r) for r in cursor.fetchall()]
-            conn.close()
-            self.send_json_response(200, {'status': 'success', 'data': rows})
-            return
+            # 3. Get Business Profile
+            elif path == '/api/business-profile':
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT * FROM business_profile WHERE id = 1')
+                    profile = dict(cursor.fetchone())
+                finally:
+                    conn.close()
+                self.send_json_response(200, {'status': 'success', 'data': profile})
+                return
 
-        # 6. Admin API: Generate Financial Statement / P&L
-        elif path == '/api/admin/statement':
-            start_date = query.get('start_date', [''])[0]
-            end_date = query.get('end_date', [''])[0]
+            # 4. Admin API: Full Audit Log Ledger
+            elif path == '/api/admin/audit-logs':
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        SELECT id, action, transaction_id, details, timestamp
+                        FROM audit_logs
+                        ORDER BY id DESC
+                        LIMIT 200
+                    ''')
+                    rows = []
+                    for r in cursor.fetchall():
+                        item = dict(r)
+                        try:
+                            item['details'] = json.loads(item['details'])
+                        except Exception:
+                            pass
+                        rows.append(item)
+                finally:
+                    conn.close()
+                self.send_json_response(200, {'status': 'success', 'data': rows})
+                return
 
-            conn = get_db()
-            cursor = conn.cursor()
+            # 5. Admin API: Get All Deleted / Archived Transactions (Immutable Trash)
+            elif path == '/api/admin/deleted':
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        SELECT id, description, amount, type, category, date, deleted_at, deleted_reason
+                        FROM transactions
+                        WHERE is_deleted = 1
+                        ORDER BY deleted_at DESC
+                    ''')
+                    rows = [dict(r) for r in cursor.fetchall()]
+                finally:
+                    conn.close()
+                self.send_json_response(200, {'status': 'success', 'data': rows})
+                return
 
-            sql = "SELECT id, description, amount, type, category, date FROM transactions WHERE is_deleted = 0"
-            params = []
+            # 6. Admin API: Generate Financial Statement / P&L
+            elif path == '/api/admin/statement':
+                start_date = query.get('start_date', [''])[0]
+                end_date = query.get('end_date', [''])[0]
 
-            if start_date:
-                sql += " AND date >= ?"
-                params.append(start_date)
-            if end_date:
-                sql += " AND date <= ?"
-                params.append(end_date)
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    sql = "SELECT id, description, amount, type, category, date FROM transactions WHERE is_deleted = 0"
+                    params = []
 
-            sql += " ORDER BY date ASC"
-            cursor.execute(sql, params)
-            txs = [dict(r) for r in cursor.fetchall()]
+                    if start_date:
+                        sql += " AND date >= ?"
+                        params.append(start_date)
+                    if end_date:
+                        sql += " AND date <= ?"
+                        params.append(end_date)
 
-            # Compute Statement Metrics
-            total_revenue = sum(t['amount'] for t in txs if t['type'] == 'income')
-            total_expense = sum(t['amount'] for t in txs if t['type'] == 'expense')
-            net_profit = total_revenue - total_expense
-            profit_margin = round((net_profit / total_revenue * 100), 2) if total_revenue > 0 else 0.0
+                    sql += " ORDER BY date ASC"
+                    cursor.execute(sql, params)
+                    txs = [dict(r) for r in cursor.fetchall()]
 
-            # Group by Category
-            revenue_by_cat = {}
-            expense_by_cat = {}
-            for t in txs:
-                cat = t['category']
-                amt = t['amount']
-                if t['type'] == 'income':
-                    revenue_by_cat[cat] = revenue_by_cat.get(cat, 0) + amt
-                else:
-                    expense_by_cat[cat] = expense_by_cat.get(cat, 0) + amt
+                    # Compute Statement Metrics
+                    total_revenue = sum(t['amount'] for t in txs if t['type'] == 'income')
+                    total_expense = sum(t['amount'] for t in txs if t['type'] == 'expense')
+                    net_profit = total_revenue - total_expense
+                    profit_margin = round((net_profit / total_revenue * 100), 2) if total_revenue > 0 else 0.0
 
-            cursor.execute('SELECT * FROM business_profile WHERE id = 1')
-            profile = dict(cursor.fetchone())
-            conn.close()
+                    # Group by Category
+                    revenue_by_cat = {}
+                    expense_by_cat = {}
+                    for t in txs:
+                        cat = t['category']
+                        amt = t['amount']
+                        if t['type'] == 'income':
+                            revenue_by_cat[cat] = revenue_by_cat.get(cat, 0) + amt
+                        else:
+                            expense_by_cat[cat] = expense_by_cat.get(cat, 0) + amt
 
-            statement_data = {
-                'profile': profile,
-                'period': {
-                    'start_date': start_date or 'Beginning',
-                    'end_date': end_date or datetime.now().strftime('%Y-%m-%d'),
-                    'generated_at': datetime.now().strftime('%d %b %Y, %I:%M %p')
-                },
-                'summary': {
-                    'total_revenue': total_revenue,
-                    'total_expense': total_expense,
-                    'net_profit': net_profit,
-                    'profit_margin_percent': profit_margin,
-                    'transaction_count': len(txs)
-                },
-                'revenue_breakdown': revenue_by_cat,
-                'expense_breakdown': expense_by_cat,
-                'transactions': txs
-            }
+                    cursor.execute('SELECT * FROM business_profile WHERE id = 1')
+                    profile = dict(cursor.fetchone())
+                finally:
+                    conn.close()
 
-            self.send_json_response(200, {'status': 'success', 'data': statement_data})
-            return
+                statement_data = {
+                    'profile': profile,
+                    'period': {
+                        'start_date': start_date or 'Beginning',
+                        'end_date': end_date or datetime.now().strftime('%Y-%m-%d'),
+                        'generated_at': datetime.now().strftime('%d %b %Y, %I:%M %p')
+                    },
+                    'summary': {
+                        'total_revenue': total_revenue,
+                        'total_expense': total_expense,
+                        'net_profit': net_profit,
+                        'profit_margin_percent': profit_margin,
+                        'transaction_count': len(txs)
+                    },
+                    'revenue_breakdown': revenue_by_cat,
+                    'expense_breakdown': expense_by_cat,
+                    'transactions': txs
+                }
 
-        # Serve static assets
-        self.serve_static_file(path)
+                self.send_json_response(200, {'status': 'success', 'data': statement_data})
+                return
+
+            # Serve static assets
+            self.serve_static_file(path)
+        except Exception as e:
+            self.send_json_response(500, {'status': 'error', 'message': str(e)})
 
     def do_POST(self):
-        parsed = urlparse(self.path)
-        path = parsed.path
-        length = int(self.headers.get('Content-Length', 0))
-        body = {}
+        try:
+            parsed = urlparse(self.path)
+            path = parsed.path
+            length = int(self.headers.get('Content-Length', 0))
+            body = {}
 
-        if length > 0:
-            try:
-                body = json.loads(self.rfile.read(length).decode('utf-8'))
-            except Exception as e:
-                self.send_json_response(400, {'status': 'error', 'message': 'Invalid JSON'})
+            if length > 0:
+                try:
+                    body = json.loads(self.rfile.read(length).decode('utf-8'))
+                except Exception as e:
+                    self.send_json_response(400, {'status': 'error', 'message': 'Invalid JSON'})
+                    return
+
+            # 1. Create Transaction
+            if path == '/api/transactions':
+                desc = body.get('description', '').strip()
+                amount = body.get('amount')
+                tx_type = body.get('type')
+                category = body.get('category')
+                date_str = body.get('date')
+                tx_id = body.get('id') or f"tx_{int(datetime.now().timestamp()*1000)}"
+
+                if not desc or amount is None or not tx_type or not category or not date_str:
+                    self.send_json_response(400, {'status': 'error', 'message': 'Missing required fields.'})
+                    return
+
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO transactions (id, description, amount, type, category, date, is_deleted)
+                        VALUES (?, ?, ?, ?, ?, ?, 0)
+                        ON CONFLICT(id) DO UPDATE SET
+                            description = excluded.description,
+                            amount = excluded.amount,
+                            type = excluded.type,
+                            category = excluded.category,
+                            date = excluded.date,
+                            is_deleted = 0,
+                            deleted_at = NULL,
+                            deleted_reason = NULL
+                    ''', (tx_id, desc, float(amount), tx_type, category, date_str))
+
+                    log_audit(conn, 'CREATE', tx_id, {
+                        'description': desc,
+                        'amount': float(amount),
+                        'type': tx_type,
+                        'category': category,
+                        'date': date_str
+                    })
+                finally:
+                    conn.close()
+
+                self.send_json_response(201, {'status': 'success', 'message': 'Transaction added'})
                 return
 
-        # 1. Create Transaction
-        if path == '/api/transactions':
-            desc = body.get('description', '').strip()
-            amount = body.get('amount')
-            tx_type = body.get('type')
-            category = body.get('category')
-            date_str = body.get('date')
-            tx_id = body.get('id') or f"tx_{int(datetime.now().timestamp()*1000)}"
+            # 2. Restore Deleted Transaction (Soft-delete reversal)
+            elif path.startswith('/api/admin/restore/'):
+                tx_id = path.replace('/api/admin/restore/', '').strip()
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT * FROM transactions WHERE id = ?', (tx_id,))
+                    target = cursor.fetchone()
 
-            if not desc or amount is None or not tx_type or not category or not date_str:
-                self.send_json_response(400, {'status': 'error', 'message': 'Missing required fields.'})
+                    if not target:
+                        self.send_json_response(404, {'status': 'error', 'message': 'Transaction not found'})
+                        return
+
+                    cursor.execute('UPDATE transactions SET is_deleted = 0, deleted_at = NULL WHERE id = ?', (tx_id,))
+                    log_audit(conn, 'RESTORE', tx_id, {
+                        'description': target['description'],
+                        'amount': target['amount'],
+                        'type': target['type'],
+                        'category': target['category']
+                    })
+                finally:
+                    conn.close()
+
+                self.send_json_response(200, {'status': 'success', 'message': f'Restored "{target["description"]}"'})
                 return
 
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO transactions (id, description, amount, type, category, date, is_deleted)
-                VALUES (?, ?, ?, ?, ?, ?, 0)
-            ''', (tx_id, desc, float(amount), tx_type, category, date_str))
-
-            log_audit(conn, 'CREATE', tx_id, {
-                'description': desc,
-                'amount': float(amount),
-                'type': tx_type,
-                'category': category,
-                'date': date_str
-            })
-            conn.close()
-
-            self.send_json_response(201, {'status': 'success', 'message': 'Transaction added'})
-            return
-
-        # 2. Restore Deleted Transaction (Soft-delete reversal)
-        elif path.startswith('/api/admin/restore/'):
-            tx_id = path.replace('/api/admin/restore/', '').strip()
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM transactions WHERE id = ?', (tx_id,))
-            target = cursor.fetchone()
-
-            if not target:
-                conn.close()
-                self.send_json_response(404, {'status': 'error', 'message': 'Transaction not found'})
+            # 3. Update Business Profile
+            elif path == '/api/business-profile':
+                company_name = body.get('company_name', 'Apex Business Solutions Pvt. Ltd.')
+                tax_id = body.get('tax_id', '')
+                financial_year = body.get('financial_year', '2026-2027')
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE business_profile SET company_name = ?, tax_id = ?, financial_year = ? WHERE id = 1', (company_name, tax_id, financial_year))
+                    log_audit(conn, 'PROFILE_UPDATE', None, {'company_name': company_name, 'tax_id': tax_id, 'financial_year': financial_year})
+                finally:
+                    conn.close()
+                self.send_json_response(200, {'status': 'success', 'message': 'Profile updated'})
                 return
 
-            cursor.execute('UPDATE transactions SET is_deleted = 0, deleted_at = NULL WHERE id = ?', (tx_id,))
-            log_audit(conn, 'RESTORE', tx_id, {
-                'description': target['description'],
-                'amount': target['amount'],
-                'type': target['type'],
-                'category': target['category']
-            })
-            conn.close()
+            # 4. Reset All Active Transactions
+            elif path == '/api/reset':
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE transactions SET is_deleted = 1, deleted_at = datetime("now", "localtime"), deleted_reason = "Admin Reset" WHERE is_deleted = 0')
+                    log_audit(conn, 'RESET', None, {'timestamp': datetime.now().isoformat()})
+                finally:
+                    conn.close()
+                self.send_json_response(200, {'status': 'success', 'message': 'All active transactions archived.'})
+                return
 
-            self.send_json_response(200, {'status': 'success', 'message': f'Restored "{target["description"]}"'})
-            return
+            # 5. Reload Sample Data
+            elif path == '/api/sample-data':
+                conn = get_db()
+                try:
+                    seed_business_sample_data(conn)
+                finally:
+                    conn.close()
+                self.send_json_response(200, {'status': 'success', 'message': 'Sample dataset loaded.'})
+                return
 
-        # 3. Update Business Profile
-        elif path == '/api/business-profile':
-            company_name = body.get('company_name', 'Apex Business Solutions')
-            tax_id = body.get('tax_id', '')
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('UPDATE business_profile SET company_name = ?, tax_id = ? WHERE id = 1', (company_name, tax_id))
-            log_audit(conn, 'PROFILE_UPDATE', None, {'company_name': company_name, 'tax_id': tax_id})
-            conn.close()
-            self.send_json_response(200, {'status': 'success', 'message': 'Profile updated'})
-            return
-
-        # 4. Reset All Active Transactions
-        elif path == '/api/reset':
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('UPDATE transactions SET is_deleted = 1, deleted_at = datetime("now", "localtime"), deleted_reason = "Admin Reset" WHERE is_deleted = 0')
-            log_audit(conn, 'RESET', None, {'timestamp': datetime.now().isoformat()})
-            conn.close()
-            self.send_json_response(200, {'status': 'success', 'message': 'All active transactions archived.'})
-            return
-
-        # 5. Reload Sample Data
-        elif path == '/api/sample-data':
-            conn = get_db()
-            seed_business_sample_data(conn)
-            conn.close()
-            self.send_json_response(200, {'status': 'success', 'message': 'Sample dataset loaded.'})
-            return
-
-        self.send_json_response(404, {'status': 'error', 'message': 'Route not found'})
+            self.send_json_response(404, {'status': 'error', 'message': 'Route not found'})
+        except Exception as e:
+            self.send_json_response(500, {'status': 'error', 'message': str(e)})
 
     def do_DELETE(self):
-        parsed = urlparse(self.path)
-        path = parsed.path
+        try:
+            parsed = urlparse(self.path)
+            path = parsed.path
 
-        # Soft Delete (Immutable archive - NO permanent purge)
-        if path.startswith('/api/transactions/'):
-            tx_id = path.replace('/api/transactions/', '').strip()
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM transactions WHERE id = ? AND is_deleted = 0', (tx_id,))
-            target = cursor.fetchone()
+            # Soft Delete (Immutable archive - NO permanent purge)
+            if path.startswith('/api/transactions/'):
+                tx_id = path.replace('/api/transactions/', '').strip()
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT * FROM transactions WHERE id = ? AND is_deleted = 0', (tx_id,))
+                    target = cursor.fetchone()
 
-            if not target:
-                conn.close()
-                self.send_json_response(404, {'status': 'error', 'message': 'Active transaction not found.'})
+                    if not target:
+                        self.send_json_response(404, {'status': 'error', 'message': 'Active transaction not found.'})
+                        return
+
+                    cursor.execute('''
+                        UPDATE transactions
+                        SET is_deleted = 1, deleted_at = datetime('now', 'localtime'), deleted_reason = 'Deleted via User App'
+                        WHERE id = ?
+                    ''', (tx_id,))
+
+                    log_audit(conn, 'DELETE', tx_id, {
+                        'description': target['description'],
+                        'amount': target['amount'],
+                        'type': target['type'],
+                        'category': target['category'],
+                        'date': target['date'],
+                        'deleted_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    })
+                finally:
+                    conn.close()
+
+                self.send_json_response(200, {'status': 'success', 'message': f'Archived "{target["description"]}"'})
                 return
 
-            cursor.execute('''
-                UPDATE transactions
-                SET is_deleted = 1, deleted_at = datetime('now', 'localtime'), deleted_reason = 'Deleted via User App'
-                WHERE id = ?
-            ''', (tx_id,))
-
-            log_audit(conn, 'DELETE', tx_id, {
-                'description': target['description'],
-                'amount': target['amount'],
-                'type': target['type'],
-                'category': target['category'],
-                'date': target['date'],
-                'deleted_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            })
-            conn.close()
-
-            self.send_json_response(200, {'status': 'success', 'message': f'Archived "{target["description"]}"'})
-            return
-
-        self.send_json_response(404, {'status': 'error', 'message': 'Route not found'})
+            self.send_json_response(404, {'status': 'error', 'message': 'Route not found'})
+        except Exception as e:
+            self.send_json_response(500, {'status': 'error', 'message': str(e)})
 
     def serve_static_file(self, path):
         if path in ('/', ''):
             path = '/index.html'
 
-        safe_path = os.path.normpath(path.lstrip('/'))
-        full_path = os.path.join(BASE_DIR, safe_path)
+        safe_path = os.path.normpath(path.lstrip('/\\'))
+        full_path = os.path.abspath(os.path.join(BASE_DIR, safe_path))
+
+        # Prevent path traversal
+        try:
+            if os.path.commonpath([BASE_DIR, full_path]) != BASE_DIR:
+                self.send_response(403)
+                self.end_headers()
+                self.wfile.write(b"<h1>403 Forbidden</h1>")
+                return
+        except Exception:
+            self.send_response(400)
+            self.end_headers()
+            return
 
         if not os.path.exists(full_path) or os.path.isdir(full_path):
             self.send_response(404)
@@ -450,27 +525,47 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-Type', f'{mime_type}; charset=utf-8' if 'text' in mime_type or 'javascript' in mime_type or 'json' in mime_type else mime_type)
             self.send_header('Content-Length', str(len(content)))
             self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Connection', 'close')
             self.end_headers()
             self.wfile.write(content)
+            self.wfile.flush()
         except Exception as e:
             self.send_response(500)
+            self.send_header('Connection', 'close')
             self.end_headers()
             self.wfile.write(str(e).encode('utf-8'))
+            self.wfile.flush()
 
     def log_message(self, format, *args):
         pass # Clean console
 
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
 def run_server():
+    import sys
+    if hasattr(sys.stdout, 'reconfigure'):
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
+
     init_db()
     print("=" * 65)
-    print(" 💼 BUSINESS FINANCE & EXPENSE MANAGEMENT SERVER")
+    print(" [APEX FINANCE] Business Expense Tracker & SQLite Ledger")
     print("=" * 65)
-    print(f" • Main Portal   : http://localhost:{PORT}")
-    print(f" • Admin Portal  : http://localhost:{PORT}/admin.html")
-    print(f" • Database File : {DB_FILE} (SQLite Immutable Ledger)")
+    print(f" * Dashboard     : http://localhost:{PORT}")
+    print(f" * Transactions  : http://localhost:{PORT}/transactions.html")
+    print(f" * Analytics     : http://localhost:{PORT}/analytics.html")
+    print(f" * Statements    : http://localhost:{PORT}/statements.html")
+    print(f" * Audit Ledger  : http://localhost:{PORT}/audit-logs.html")
+    print(f" * Archived Trash: http://localhost:{PORT}/trash.html")
+    print(f" * Settings      : http://localhost:{PORT}/settings.html")
+    print(f" * Database File : {DB_FILE}")
     print("=" * 65)
 
-    with socketserver.TCPServer(("", PORT), BusinessTrackerHandler) as httpd:
+    with ThreadedHTTPServer(("", PORT), BusinessTrackerHandler) as httpd:
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

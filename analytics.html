@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Apex Business Finance — Analytics & Cost Intelligence" />
+  <title>Analytics & Costs — Apex Business Finance</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <div class="sidebar-title-wrap">
+        <span class="sidebar-app-name">Apex Finance</span>
+        <span class="sidebar-company-name">Apex Business Solutions</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">Overview</span>
+      <a href="index.html" class="nav-link">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="transactions.html" class="nav-link">
+        <i class="fa-solid fa-receipt"></i>
+        <span>Transactions</span>
+      </a>
+      <a href="analytics.html" class="nav-link active">
+        <i class="fa-solid fa-chart-column"></i>
+        <span>Analytics & Costs</span>
+      </a>
+
+      <span class="nav-section-title">Executive & Audit</span>
+      <a href="statements.html" class="nav-link">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>Financial Statement</span>
+      </a>
+      <a href="audit-logs.html" class="nav-link">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Audit Ledger</span>
+      </a>
+      <a href="trash.html" class="nav-link">
+        <i class="fa-solid fa-box-archive"></i>
+        <span>Archived / Trash</span>
+      </a>
+      <a href="settings.html" class="nav-link">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-details">
+          <span class="user-name">Executive Admin</span>
+          <span class="user-role">Finance Controller</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="app-main-content">
+    
+    <!-- Top Bar -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Sidebar Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="page-heading">
+          <h1 class="page-title">Cost Intelligence & Analytics</h1>
+          <span class="page-breadcrumb">Apex Business Finance / Analytics & Cost Insights</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <span class="backend-badge" id="backendStatusBadge">
+          <span class="status-dot"></span>
+          <span id="backendStatusText">Checking storage...</span>
+        </span>
+
+        <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
+          <i class="fa-solid fa-sun icon-sun"></i>
+          <i class="fa-solid fa-moon icon-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Body -->
+    <div class="page-body">
+      
+      <!-- Analytics Highlights -->
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Top Expense Stream</span>
+            <div class="kpi-icon-wrap kpi-expense"><i class="fa-solid fa-fire"></i></div>
+          </div>
+          <div class="kpi-val" id="topExpenseCat" style="font-size: 1.25rem;">—</div>
+          <span class="kpi-sub" id="topExpenseAmount">₹0.00 total</span>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Top Revenue Source</span>
+            <div class="kpi-icon-wrap kpi-revenue"><i class="fa-solid fa-trophy"></i></div>
+          </div>
+          <div class="kpi-val" id="topRevenueCat" style="font-size: 1.25rem;">—</div>
+          <span class="kpi-sub" id="topRevenueAmount">₹0.00 total</span>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Average Transaction</span>
+            <div class="kpi-icon-wrap kpi-profit"><i class="fa-solid fa-calculator"></i></div>
+          </div>
+          <div class="kpi-val" id="avgTxSize">₹0.00</div>
+          <span class="kpi-sub">Across all ledger entries</span>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Cost / Revenue Ratio</span>
+            <div class="kpi-icon-wrap kpi-margin"><i class="fa-solid fa-scale-balanced"></i></div>
+          </div>
+          <div class="kpi-val" id="costToRevRatio">0%</div>
+          <span class="kpi-sub">Operating Expense Intensity</span>
+        </div>
+      </section>
+
+      <!-- Charts Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="analytics-charts-grid">
+        
+        <!-- Doughnut Chart -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Expenditure Distribution</h2>
+          </div>
+          <div style="height: 300px; position: relative;">
+            <canvas id="analyticsDoughnut"></canvas>
+          </div>
+        </div>
+
+        <!-- Monthly Trends -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Monthly Capital Flow Trend</h2>
+          </div>
+          <div style="height: 300px; position: relative;">
+            <canvas id="analyticsMonthlyTrend"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Itemized Category Breakdown Table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Operating Expenditure by Category</h2>
+            <p class="card-subtitle">Detailed breakdown of organizational spend across departments</p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="corporate-table">
+            <thead>
+              <tr>
+                <th>Category Name</th>
+                <th>Transaction Count</th>
+                <th>% of Total Operating Cost</th>
+                <th class="text-right">Total Amount (INR)</th>
+              </tr>
+            </thead>
+            <tbody id="categoryBreakdownBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Shared Engine Script -->
+  <script src="shared.js"></script>
+
+  <!-- Analytics Page Controller -->
+  <script>
+    let doughnutChart = null;
+    let monthlyTrendChart = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const txs = await fetchTransactions();
+      renderAnalytics(txs);
+    });
+
+    function renderAnalytics(txs) {
+      const expenses = txs.filter((t) => t.type === 'expense');
+      const incomes = txs.filter((t) => t.type === 'income');
+
+      let totalExp = 0;
+      let totalRev = 0;
+      const expCatMap = {};
+      const revCatMap = {};
+
+      expenses.forEach((t) => {
+        const amt = Number(t.amount);
+        totalExp += amt;
+        if (!expCatMap[t.category]) expCatMap[t.category] = { amount: 0, count: 0 };
+        expCatMap[t.category].amount += amt;
+        expCatMap[t.category].count++;
+      });
+
+      incomes.forEach((t) => {
+        const amt = Number(t.amount);
+        totalRev += amt;
+        if (!revCatMap[t.category]) revCatMap[t.category] = { amount: 0, count: 0 };
+        revCatMap[t.category].amount += amt;
+        revCatMap[t.category].count++;
+      });
+
+      // Top Highlights
+      const sortedExp = Object.entries(expCatMap).sort((a, b) => b[1].amount - a[1].amount);
+      const sortedRev = Object.entries(revCatMap).sort((a, b) => b[1].amount - a[1].amount);
+
+      if (sortedExp.length > 0) {
+        document.getElementById('topExpenseCat').textContent = sortedExp[0][0];
+        document.getElementById('topExpenseAmount').textContent = formatCurrency(sortedExp[0][1].amount);
+      }
+      if (sortedRev.length > 0) {
+        document.getElementById('topRevenueCat').textContent = sortedRev[0][0];
+        document.getElementById('topRevenueAmount').textContent = formatCurrency(sortedRev[0][1].amount);
+      }
+
+      const avg = txs.length > 0 ? (totalRev + totalExp) / txs.length : 0;
+      document.getElementById('avgTxSize').textContent = formatCurrency(avg);
+
+      const ratio = totalRev > 0 ? Math.round((totalExp / totalRev) * 100) : 0;
+      document.getElementById('costToRevRatio').textContent = `${ratio}%`;
+
+      renderCategoryTable(sortedExp, totalExp);
+      renderAnalyticsDoughnut(sortedExp);
+      renderAnalyticsMonthly(txs);
+    }
+
+    function renderCategoryTable(sortedExp, totalExp) {
+      const tbody = document.getElementById('categoryBreakdownBody');
+      tbody.innerHTML = '';
+
+      if (sortedExp.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);">No operating expense records found</td></tr>';
+        return;
+      }
+
+      sortedExp.forEach(([catName, data]) => {
+        const pct = totalExp > 0 ? ((data.amount / totalExp) * 100).toFixed(1) : 0;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(catName)}</strong></td>
+          <td>${data.count} transaction${data.count === 1 ? '' : 's'}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:0.65rem;">
+              <div style="flex:1; height:6px; background:var(--border-color); border-radius:999px; overflow:hidden;">
+                <div style="width:${pct}%; height:100%; background:var(--corporate-blue);"></div>
+              </div>
+              <span style="font-size:0.75rem; font-weight:700;">${pct}%</span>
+            </div>
+          </td>
+          <td class="text-right" style="font-weight:700; color:var(--expense);">${formatCurrency(data.amount)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAnalyticsDoughnut(sortedExp) {
+      const labels = sortedExp.map((e) => e[0]);
+      const data = sortedExp.map((e) => e[1].amount);
+      const bgColors = ['#2563eb', '#6366f1', '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#eab308', '#ef4444', '#14b8a6', '#64748b'];
+
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+
+      const ctx = document.getElementById('analyticsDoughnut').getContext('2d');
+      if (doughnutChart) doughnutChart.destroy();
+
+      doughnutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 2, borderColor: isDark ? '#111827' : '#ffffff' }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, color: textColor, font: { size: 10 } } } }
+        }
+      });
+    }
+
+    function renderAnalyticsMonthly(txs) {
+      const monthly = {};
+      txs.forEach((t) => {
+        if (!t.date) return;
+        const key = t.date.slice(0, 7);
+        if (!monthly[key]) monthly[key] = { rev: 0, exp: 0 };
+        if (t.type === 'income') monthly[key].rev += Number(t.amount);
+        else monthly[key].exp += Number(t.amount);
+      });
+
+      const keys = Object.keys(monthly).sort();
+      const labels = keys.map((k) => {
+        const [y, m] = k.split('-');
+        return new Date(y, parseInt(m, 10) - 1, 1).toLocaleDateString('en-IN', { month: 'short' });
+      });
+
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+      const ctx = document.getElementById('analyticsMonthlyTrend').getContext('2d');
+      if (monthlyTrendChart) monthlyTrendChart.destroy();
+
+      monthlyTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Revenue Flow', data: keys.map((k) => monthly[k].rev), borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', fill: true, tension: 0.3 },
+            { label: 'Cost Outflow', data: keys.map((k) => monthly[k].exp), borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', fill: true, tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { display: false }, ticks: { color: textColor } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor, callback: (v) => '₹' + (v >= 1000 ? v / 1000 + 'k' : v) } }
+          },
+          plugins: { legend: { position: 'top', labels: { color: textColor } } }
+        }
+      });
+    }
+
+    function onThemeChanged() {
+      fetchTransactions().then((txs) => renderAnalytics(txs));
+    }
+  </script>
+</body>
+</html>

@@ -3,482 +3,392 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Corporate Business Expense & Revenue Tracker with SQLite Audit Logging and Financial Statements." />
-  <title>Apex Business Finance — Expense & Revenue Management</title>
+  <meta name="description" content="Apex Business Finance — Executive Financial Dashboard" />
+  <title>Dashboard — Apex Business Finance</title>
 
-  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- Font Awesome 6.5.1 CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-  <!-- Chart.js 4.4.1 CDN -->
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="style.css" />
+  <!-- Shared & Dashboard Styles -->
+  <link rel="stylesheet" href="shared.css" />
 </head>
 <body>
-  
-  <div class="app-container">
-    
-    <!-- Corporate Top Navigation Bar -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="brand-logo" aria-hidden="true">
-          <i class="fa-solid fa-briefcase"></i>
+
+  <!-- Sidebar Navigation -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <div class="sidebar-title-wrap">
+        <span class="sidebar-app-name">Apex Finance</span>
+        <span class="sidebar-company-name">Apex Business Solutions</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">Overview</span>
+      <a href="index.html" class="nav-link active">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="transactions.html" class="nav-link">
+        <i class="fa-solid fa-receipt"></i>
+        <span>Transactions</span>
+      </a>
+      <a href="analytics.html" class="nav-link">
+        <i class="fa-solid fa-chart-column"></i>
+        <span>Analytics & Costs</span>
+      </a>
+
+      <span class="nav-section-title">Executive & Audit</span>
+      <a href="statements.html" class="nav-link">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>Financial Statement</span>
+      </a>
+      <a href="audit-logs.html" class="nav-link">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Audit Ledger</span>
+      </a>
+      <a href="trash.html" class="nav-link">
+        <i class="fa-solid fa-box-archive"></i>
+        <span>Archived / Trash</span>
+      </a>
+      <a href="settings.html" class="nav-link">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-details">
+          <span class="user-name">Executive Admin</span>
+          <span class="user-role">Finance Controller</span>
         </div>
-        <div class="brand-info">
-          <div class="brand-title-row">
-            <h1 class="brand-title">Apex Business Finance</h1>
-            <span class="backend-badge" id="backendStatusBadge" title="Storage Engine Status">
-              <span class="status-dot"></span>
-              <span id="backendStatusText">Checking storage...</span>
-            </span>
-          </div>
-          <p class="brand-subtitle">Commercial Revenue & Operating Expenditure Management</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="app-main-content">
+    
+    <!-- Top Bar -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Sidebar Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="page-heading">
+          <h1 class="page-title">Executive Dashboard</h1>
+          <span class="page-breadcrumb">Apex Business Finance / Executive Overview</span>
         </div>
       </div>
 
-      <div class="header-actions">
-        <!-- Date Badge -->
-        <div class="date-badge" id="currentDateBadge" aria-label="Today's date">
-          <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-          <span id="currentDateText">Today</span>
-        </div>
+      <div class="topbar-actions">
+        <span class="backend-badge" id="backendStatusBadge">
+          <span class="status-dot"></span>
+          <span id="backendStatusText">Checking storage...</span>
+        </span>
 
-        <!-- Action Buttons -->
-        <div class="quick-actions">
-          <!-- Direct Link to Dedicated Admin Portal -->
-          <a href="admin.html" class="btn btn-admin" title="Open Executive Admin Portal (Statements & Audit Ledger)">
-            <i class="fa-solid fa-building-shield"></i>
-            <span>Admin Portal</span>
-          </a>
-
-          <button id="sampleDataBtn" class="btn btn-secondary btn-sm" title="Load demo sample business transactions" aria-label="Load demo sample business transactions">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span class="btn-text">Sample Data</span>
-          </button>
-          
-          <button id="exportCsvBtn" class="btn btn-secondary btn-sm" title="Export transactions as CSV file" aria-label="Export transactions as CSV file">
-            <i class="fa-solid fa-file-arrow-down"></i>
-            <span class="btn-text">Export CSV</span>
-          </button>
-
-          <button id="clearAllBtn" class="btn btn-secondary btn-sm btn-danger-hover" title="Archive all active transactions into audit ledger" aria-label="Clear all transactions">
-            <i class="fa-solid fa-trash-can"></i>
-            <span class="btn-text">Reset</span>
-          </button>
-        </div>
-
-        <!-- Theme Toggle -->
-        <button id="themeToggleBtn" class="theme-toggle" title="Toggle Light/Dark theme" aria-label="Switch between light and dark mode">
-          <i class="fa-solid fa-sun icon-sun" aria-hidden="true"></i>
-          <i class="fa-solid fa-moon icon-moon" aria-hidden="true"></i>
+        <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
+          <i class="fa-solid fa-sun icon-sun"></i>
+          <i class="fa-solid fa-moon icon-moon"></i>
         </button>
       </div>
     </header>
 
-    <!-- Main Content Grid -->
-    <main class="main-content">
+    <!-- Page Body -->
+    <div class="page-body">
       
-      <!-- Executive Overview Summary Cards -->
-      <section class="overview-section" aria-label="Financial Overview Summary">
-        
-        <!-- Net Operating Balance Card -->
-        <div class="stat-card stat-balance" id="balanceCard">
-          <div class="stat-card-header">
-            <span class="stat-label">Net Operating Balance</span>
-            <div class="stat-icon-wrapper balance-icon">
-              <i class="fa-solid fa-indian-rupee-sign" aria-hidden="true"></i>
+      <!-- KPI Cards Ribbon -->
+      <section class="kpi-grid" aria-label="Key Performance Indicators">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Gross Revenue</span>
+            <div class="kpi-icon-wrap kpi-revenue">
+              <i class="fa-solid fa-arrow-trend-up"></i>
             </div>
           </div>
-          <div class="stat-value" id="totalBalance">₹0.00</div>
-          <div class="stat-footer">
-            <span class="stat-badge" id="balanceBadge">
-              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-              <span id="balanceStatusText">Profitable</span>
-            </span>
-          </div>
+          <div class="kpi-val" id="dashGrossRevenue">₹0.00</div>
+          <span class="kpi-sub" id="dashRevenueCount">0 revenue streams</span>
         </div>
 
-        <!-- Gross Business Revenue Card -->
-        <div class="stat-card stat-income">
-          <div class="stat-card-header">
-            <span class="stat-label">Gross Revenue</span>
-            <div class="stat-icon-wrapper income-icon">
-              <i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Operating Expenses</span>
+            <div class="kpi-icon-wrap kpi-expense">
+              <i class="fa-solid fa-arrow-trend-down"></i>
             </div>
           </div>
-          <div class="stat-value" id="totalIncome">₹0.00</div>
-          <div class="stat-footer">
-            <span class="stat-subtext" id="incomeCount">0 revenue streams</span>
-          </div>
+          <div class="kpi-val" id="dashTotalExpense">₹0.00</div>
+          <span class="kpi-sub" id="dashExpenseCount">0 cost entries</span>
         </div>
 
-        <!-- Total Operating Expenses Card -->
-        <div class="stat-card stat-expense">
-          <div class="stat-card-header">
-            <span class="stat-label">Operating Expenses</span>
-            <div class="stat-icon-wrapper expense-icon">
-              <i class="fa-solid fa-arrow-trend-down" aria-hidden="true"></i>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Net Operating Profit</span>
+            <div class="kpi-icon-wrap kpi-profit">
+              <i class="fa-solid fa-indian-rupee-sign"></i>
             </div>
           </div>
-          <div class="stat-value" id="totalExpenses">₹0.00</div>
-          <div class="stat-footer">
-            <span class="stat-subtext" id="expenseCount">0 cost entries</span>
-          </div>
+          <div class="kpi-val" id="dashNetProfit">₹0.00</div>
+          <span class="kpi-sub" id="dashProfitStatus">Net Positive</span>
         </div>
 
-        <!-- Operating Margin Card -->
-        <div class="stat-card stat-savings">
-          <div class="stat-card-header">
-            <span class="stat-label">Operating Margin</span>
-            <div class="stat-icon-wrapper savings-icon">
-              <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Operating Margin</span>
+            <div class="kpi-icon-wrap kpi-margin">
+              <i class="fa-solid fa-percent"></i>
             </div>
           </div>
-          <div class="stat-value" id="savingsRate">0%</div>
-          <div class="stat-footer">
-            <span class="stat-subtext" id="monthlyExpenseText">This month costs: ₹0.00</span>
-          </div>
+          <div class="kpi-val" id="dashMargin">0%</div>
+          <span class="kpi-sub" id="dashMonthCost">This month costs: ₹0.00</span>
         </div>
-
       </section>
 
-      <!-- Two-Column Grid: Transaction Entry vs History -->
-      <div class="dashboard-grid">
+      <!-- Charts Section (Grid: 1fr 1.2fr) -->
+      <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 1.5rem;" class="dash-charts-grid">
         
-        <!-- LEFT COLUMN: Add Transaction Form & Analytics Charts -->
-        <div class="dashboard-column left-column">
-          
-          <!-- Card: Add Business Transaction -->
-          <section class="card form-card" aria-labelledby="formTitle">
-            <div class="card-header">
-              <div class="card-title-group">
-                <i class="fa-solid fa-circle-plus card-header-icon" aria-hidden="true"></i>
-                <h2 id="formTitle" class="card-title">Record Business Transaction</h2>
-              </div>
+        <!-- Doughnut Chart: Cost Breakdown -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <i class="fa-solid fa-chart-pie" style="color: var(--corporate-blue);"></i>
+              <h2 class="card-title">Cost Breakdown</h2>
             </div>
-
-            <!-- Transaction Form -->
-            <form id="transactionForm" class="transaction-form" novalidate>
-              
-              <!-- Transaction Type Segmented Switch -->
-              <div class="form-group">
-                <label class="form-label">Transaction Classification</label>
-                <div class="type-selector" role="radiogroup" aria-label="Transaction Type">
-                  <label class="type-option expense-option active" id="expenseTypeLabel">
-                    <input type="radio" name="transactionType" value="expense" checked id="typeExpense" />
-                    <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
-                    <span>Operating Expense</span>
-                  </label>
-                  <label class="type-option income-option" id="incomeTypeLabel">
-                    <input type="radio" name="transactionType" value="income" id="typeIncome" />
-                    <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
-                    <span>Revenue / Inflow</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- Description Input -->
-              <div class="form-group">
-                <label for="descriptionInput" class="form-label">
-                  Description / Invoice Reference <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper">
-                  <i class="fa-solid fa-pen-to-square input-icon" aria-hidden="true"></i>
-                  <input
-                    type="text"
-                    id="descriptionInput"
-                    name="description"
-                    class="form-input"
-                    placeholder="e.g. AWS Cloud Invoice, Client Retainer, Office Rent"
-                    autocomplete="off"
-                    required
-                    maxlength="70"
-                  />
-                </div>
-                <div class="error-feedback" id="descriptionError" role="alert" aria-live="polite"></div>
-              </div>
-
-              <!-- Amount & Category Grid -->
-              <div class="form-row-2">
-                <!-- Amount Input -->
-                <div class="form-group">
-                  <label for="amountInput" class="form-label">
-                    Amount (₹) <span class="required-star">*</span>
-                  </label>
-                  <div class="input-wrapper">
-                    <span class="currency-prefix">₹</span>
-                    <input
-                      type="number"
-                      id="amountInput"
-                      name="amount"
-                      class="form-input amount-input"
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0.01"
-                      max="100000000"
-                      required
-                    />
-                  </div>
-                  <div class="error-feedback" id="amountError" role="alert" aria-live="polite"></div>
-                </div>
-
-                <!-- Category Select -->
-                <div class="form-group">
-                  <label for="categorySelect" class="form-label">
-                    Business Category <span class="required-star">*</span>
-                  </label>
-                  <div class="input-wrapper select-wrapper">
-                    <i class="fa-solid fa-tags input-icon" aria-hidden="true"></i>
-                    <select id="categorySelect" name="category" class="form-input form-select" required>
-                      <!-- Populated dynamically -->
-                    </select>
-                    <i class="fa-solid fa-chevron-down select-chevron" aria-hidden="true"></i>
-                  </div>
-                  <div class="error-feedback" id="categoryError" role="alert" aria-live="polite"></div>
-                </div>
-              </div>
-
-              <!-- Date Input -->
-              <div class="form-group">
-                <label for="dateInput" class="form-label">
-                  Transaction Date <span class="required-star">*</span>
-                </label>
-                <div class="input-wrapper">
-                  <i class="fa-regular fa-calendar-days input-icon" aria-hidden="true"></i>
-                  <input
-                    type="date"
-                    id="dateInput"
-                    name="date"
-                    class="form-input"
-                    required
-                  />
-                </div>
-                <div class="error-feedback" id="dateError" role="alert" aria-live="polite"></div>
-              </div>
-
-              <!-- Submit Button -->
-              <button type="submit" id="submitBtn" class="btn btn-primary btn-block">
-                <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                <span>Record Transaction</span>
-              </button>
-
-            </form>
-          </section>
-
-          <!-- Card: Operating Costs by Category Chart -->
-          <section class="card chart-card" aria-labelledby="chartCategoryTitle">
-            <div class="card-header">
-              <div class="card-title-group">
-                <i class="fa-solid fa-chart-pie card-header-icon" aria-hidden="true"></i>
-                <h2 id="chartCategoryTitle" class="card-title">Cost Breakdown by Category</h2>
-              </div>
-              <span class="chart-badge">Operating Costs</span>
-            </div>
-            
-            <div class="chart-body">
-              <div class="chart-container" id="categoryChartContainer">
-                <canvas id="categoryChart" aria-label="Doughnut chart of costs by category" role="img"></canvas>
-              </div>
-              <div class="chart-empty-state" id="categoryChartEmpty">
-                <i class="fa-solid fa-chart-pie" aria-hidden="true"></i>
-                <p>No operating expense data</p>
-                <small>Record costs to visualize category breakdown</small>
-              </div>
-            </div>
-          </section>
-
-          <!-- Card: Monthly Expenditure Trends -->
-          <section class="card chart-card" aria-labelledby="chartMonthlyTitle">
-            <div class="card-header">
-              <div class="card-title-group">
-                <i class="fa-solid fa-chart-column card-header-icon" aria-hidden="true"></i>
-                <h2 id="chartMonthlyTitle" class="card-title">Monthly Expenditure Overview</h2>
-              </div>
-              <span class="chart-badge">Monthly Trend</span>
-            </div>
-            
-            <div class="chart-body">
-              <div class="chart-container" id="monthlyChartContainer">
-                <canvas id="monthlyChart" aria-label="Bar chart showing monthly costs" role="img"></canvas>
-              </div>
-              <div class="chart-empty-state" id="monthlyChartEmpty">
-                <i class="fa-solid fa-chart-column" aria-hidden="true"></i>
-                <p>No monthly trends yet</p>
-                <small>Records will appear as you log transactions</small>
-              </div>
-            </div>
-          </section>
-
+            <a href="analytics.html" class="btn btn-secondary btn-sm">Full Analytics</a>
+          </div>
+          <div style="height: 260px; position: relative;">
+            <canvas id="costDoughnutChart"></canvas>
+          </div>
         </div>
 
-        <!-- RIGHT COLUMN: Transaction History & Filters -->
-        <div class="dashboard-column right-column">
-          
-          <section class="card history-card" aria-labelledby="historyTitle">
-            <div class="card-header history-header">
-              <div class="card-title-group">
-                <i class="fa-solid fa-list-check card-header-icon" aria-hidden="true"></i>
-                <h2 id="historyTitle" class="card-title">Corporate Transaction Ledger</h2>
-              </div>
-              <div class="count-badge" id="transactionCountBadge" aria-label="Transaction count">
-                0 Records
-              </div>
+        <!-- Bar Chart: Monthly Revenue vs Costs -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <i class="fa-solid fa-chart-column" style="color: var(--corporate-blue);"></i>
+              <h2 class="card-title">Monthly Revenue vs Costs</h2>
             </div>
-
-            <!-- Controls -->
-            <div class="history-controls">
-              
-              <!-- Search Bar -->
-              <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
-                <input
-                  type="text"
-                  id="searchInput"
-                  class="search-input"
-                  placeholder="Search by invoice description or category..."
-                  aria-label="Search transactions"
-                />
-                <button id="clearSearchBtn" class="clear-search-btn" title="Clear search" aria-label="Clear search input">
-                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-                </button>
-              </div>
-
-              <!-- Filter Bar Row -->
-              <div class="filter-row">
-                
-                <div class="type-filter-group" role="group" aria-label="Filter by transaction type">
-                  <button class="filter-pill active" data-type="all" id="filterAll">All</button>
-                  <button class="filter-pill" data-type="income" id="filterIncome">Revenue</button>
-                  <button class="filter-pill" data-type="expense" id="filterExpense">Expenses</button>
-                </div>
-
-                <div class="filter-selects">
-                  <div class="select-wrapper filter-select-wrapper">
-                    <select id="categoryFilter" class="filter-select" aria-label="Filter by category">
-                      <option value="all">All Categories</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down select-chevron" aria-hidden="true"></i>
-                  </div>
-
-                  <div class="select-wrapper filter-select-wrapper">
-                    <select id="sortBySelect" class="filter-select" aria-label="Sort transactions">
-                      <option value="date-desc">Newest Date</option>
-                      <option value="date-asc">Oldest Date</option>
-                      <option value="amount-desc">Amount: High to Low</option>
-                      <option value="amount-asc">Amount: Low to High</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down select-chevron" aria-hidden="true"></i>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-            <!-- Transaction List Container -->
-            <div class="transaction-list-container">
-              <ul class="transaction-list" id="transactionList" aria-label="Transactions list">
-                <!-- Populated dynamically -->
-              </ul>
-
-              <!-- Empty State -->
-              <div class="empty-state" id="emptyState" style="display: none;">
-                <div class="empty-state-icon">
-                  <i class="fa-solid fa-receipt" aria-hidden="true"></i>
-                </div>
-                <h3 class="empty-state-title" id="emptyStateTitle">No Transactions Found</h3>
-                <p class="empty-state-description" id="emptyStateDesc">
-                  No records match your active search or filter criteria.
-                </p>
-                <div class="empty-state-actions">
-                  <button id="emptyStateActionBtn" class="btn btn-primary btn-sm">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>Record First Entry</span>
-                  </button>
-                  <button id="resetFiltersBtn" class="btn btn-secondary btn-sm" style="display: none;">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span>Reset Filters</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="history-footer">
-              <span id="filteredSummaryText">Showing 0 of 0 transactions</span>
-              <span class="audit-hint"><i class="fa-solid fa-shield-halved"></i> Audited in SQLite Database</span>
-            </div>
-
-          </section>
-
+            <a href="statements.html" class="btn btn-secondary btn-sm">Generate P&amp;L</a>
+          </div>
+          <div style="height: 260px; position: relative;">
+            <canvas id="monthlyTrendChart"></canvas>
+          </div>
         </div>
 
       </div>
 
-    </main>
+      <!-- Recent Transactions Table -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Recent Transactions</h2>
+            <p class="card-subtitle">Latest records registered in corporate ledger</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="transactions.html" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-plus"></i> Record Transaction
+            </a>
+            <a href="transactions.html" class="btn btn-secondary btn-sm">
+              View All Ledger
+            </a>
+          </div>
+        </div>
 
-    <!-- App Footer -->
-    <footer class="app-footer">
-      <p>
-        <strong>Apex Business Finance Management</strong> &bull; Executive Accounting &amp; Audit Subsystem.
-      </p>
-      <p class="footer-note">
-        All financial records are verified and maintained in the immutable SQLite audit ledger.
-      </p>
-    </footer>
-
-  </div>
-
-  <!-- Delete Confirmation Modal Dialog -->
-  <div class="modal-overlay" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" style="display: none;">
-    <div class="modal-card">
-      <div class="modal-icon-wrapper modal-danger-icon">
-        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        <div class="table-responsive">
+          <table class="corporate-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th class="text-right">Amount (INR)</th>
+              </tr>
+            </thead>
+            <tbody id="recentTransactionsBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
       </div>
-      <h3 class="modal-title" id="deleteModalTitle">Archive Transaction?</h3>
-      <p class="modal-desc" id="deleteModalDesc">
-        Are you sure you want to delete <strong id="deleteTargetName">this transaction</strong>? It will be archived into the audit ledger and can be restored anytime by an Admin.
-      </p>
-      <div class="modal-actions">
-        <button id="cancelDeleteBtn" class="btn btn-secondary">Cancel</button>
-        <button id="confirmDeleteBtn" class="btn btn-danger">
-          <i class="fa-solid fa-box-archive"></i>
-          <span>Archive Transaction</span>
-        </button>
-      </div>
+
     </div>
+
   </div>
 
-  <!-- Reset Confirmation Modal Dialog -->
-  <div class="modal-overlay" id="clearAllModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle" style="display: none;">
-    <div class="modal-card">
-      <div class="modal-icon-wrapper modal-danger-icon">
-        <i class="fa-solid fa-trash-can"></i>
-      </div>
-      <h3 class="modal-title" id="clearModalTitle">Archive All Active Transactions?</h3>
-      <p class="modal-desc" id="clearModalDesc">
-        All active transactions will be archived into the corporate audit ledger. Are you sure?
-      </p>
-      <div class="modal-actions">
-        <button id="cancelClearBtn" class="btn btn-secondary">Cancel</button>
-        <button id="confirmClearBtn" class="btn btn-danger">
-          <i class="fa-solid fa-box-archive"></i>
-          <span>Archive All Data</span>
-        </button>
-      </div>
-    </div>
-  </div>
+  <!-- Shared Engine Script -->
+  <script src="shared.js"></script>
 
-  <!-- Toast Notification System -->
-  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+  <!-- Dashboard Specific Controller -->
+  <script>
+    let doughnutInstance = null;
+    let trendInstance = null;
 
-  <!-- Main Application Script -->
-  <script src="script.js"></script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const txs = await fetchTransactions();
+      renderDashboard(txs);
+    });
+
+    function renderDashboard(txs) {
+      let rev = 0;
+      let exp = 0;
+      let revCount = 0;
+      let expCount = 0;
+      const currentMonthKey = new Date().toISOString().slice(0, 7);
+      let thisMonthCost = 0;
+
+      txs.forEach((t) => {
+        const amt = Number(t.amount);
+        if (t.type === 'income') {
+          rev += amt;
+          revCount++;
+        } else {
+          exp += amt;
+          expCount++;
+          if (t.date && t.date.startsWith(currentMonthKey)) {
+            thisMonthCost += amt;
+          }
+        }
+      });
+
+      const net = rev - exp;
+      const margin = rev > 0 ? Math.round((net / rev) * 100) : 0;
+
+      document.getElementById('dashGrossRevenue').textContent = formatCurrency(rev);
+      document.getElementById('dashTotalExpense').textContent = formatCurrency(exp);
+      document.getElementById('dashNetProfit').textContent = formatCurrency(net);
+      document.getElementById('dashMargin').textContent = `${margin}%`;
+
+      document.getElementById('dashRevenueCount').textContent = `${revCount} revenue streams`;
+      document.getElementById('dashExpenseCount').textContent = `${expCount} expense records`;
+      document.getElementById('dashMonthCost').textContent = `This month costs: ${formatCurrency(thisMonthCost)}`;
+      document.getElementById('dashProfitStatus').textContent = net >= 0 ? 'Operating Profit' : 'Operating Deficit';
+
+      renderRecentTable(txs.slice(0, 6));
+      renderDoughnutChart(txs.filter((t) => t.type === 'expense'));
+      renderTrendChart(txs);
+    }
+
+    function renderRecentTable(recentTxs) {
+      const tbody = document.getElementById('recentTransactionsBody');
+      tbody.innerHTML = '';
+
+      if (recentTxs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">No recent transactions recorded</td></tr>';
+        return;
+      }
+
+      recentTxs.forEach((t) => {
+        const isInc = t.type === 'income';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${formatDate(t.date)}</td>
+          <td><strong>${escapeHtml(t.description)}</strong></td>
+          <td><span class="badge badge-audit">${escapeHtml(t.category)}</span></td>
+          <td><span class="badge ${isInc ? 'badge-income' : 'badge-expense'}">${t.type.toUpperCase()}</span></td>
+          <td class="text-right" style="font-weight:700; color:${isInc ? 'var(--income)' : 'var(--expense)'};">
+            ${isInc ? '+' : '-'}${formatCurrency(t.amount)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderDoughnutChart(expenses) {
+      const catTotals = {};
+      expenses.forEach((t) => {
+        catTotals[t.category] = (catTotals[t.category] || 0) + Number(t.amount);
+      });
+
+      const labels = Object.keys(catTotals);
+      const data = Object.values(catTotals);
+      const bgColors = ['#2563eb', '#6366f1', '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#eab308', '#ef4444', '#14b8a6', '#64748b'];
+
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const textColor = isDark ? '#f8fafc' : '#0f172a';
+
+      const ctx = document.getElementById('costDoughnutChart').getContext('2d');
+      if (doughnutInstance) doughnutInstance.destroy();
+
+      doughnutInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 2, borderColor: isDark ? '#111827' : '#ffffff' }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, color: textColor, font: { size: 10, family: "'Inter', sans-serif" } } }
+          }
+        }
+      });
+    }
+
+    function renderTrendChart(txs) {
+      const monthly = {};
+      txs.forEach((t) => {
+        if (!t.date) return;
+        const key = t.date.slice(0, 7);
+        if (!monthly[key]) monthly[key] = { rev: 0, exp: 0 };
+        if (t.type === 'income') monthly[key].rev += Number(t.amount);
+        else monthly[key].exp += Number(t.amount);
+      });
+
+      const keys = Object.keys(monthly).sort();
+      const labels = keys.map((k) => {
+        const [y, m] = k.split('-');
+        return new Date(y, parseInt(m, 10) - 1, 1).toLocaleDateString('en-IN', { month: 'short' });
+      });
+
+      const revData = keys.map((k) => monthly[k].rev);
+      const expData = keys.map((k) => monthly[k].exp);
+
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+      const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
+      if (trendInstance) trendInstance.destroy();
+
+      trendInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Revenue', data: revData, backgroundColor: '#059669', borderRadius: 4 },
+            { label: 'Expenses', data: expData, backgroundColor: '#2563eb', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { display: false }, ticks: { color: textColor } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor, callback: (v) => '₹' + (v >= 1000 ? v / 1000 + 'k' : v) } }
+          },
+          plugins: {
+            legend: { position: 'top', labels: { color: textColor, font: { family: "'Inter', sans-serif", size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function onThemeChanged() {
+      fetchTransactions().then((txs) => renderDashboard(txs));
+    }
+  </script>
 </body>
 </html>

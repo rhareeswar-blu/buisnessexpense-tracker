@@ -1,66 +1,68 @@
-# 💼 Apex Business Finance — Enterprise Expense Tracker & Admin Audit Platform
+# 💼 Apex Business Finance — Modular Enterprise Accounting & Audit Platform
 
-A modern, high-performance **Business Financial Management & Expense Tracking Platform** equipped with an embedded **SQLite Database**, an **Executive Admin Portal (`admin.html`)**, **Printable Financial Statement (P&L) Generator**, and an **Immutable Audit Ledger** that tracks and archives all changes without permanent purges.
+A complete, modern **Multi-Page Business Finance Platform** built with an embedded **SQLite Database**, **Interactive Sidebar Navigation**, **Printable Financial Statement Generator**, and an **Immutable Audit Ledger**.
 
 ![Expense Tracker Preview](assets/screenshot.png)
 
 ---
 
-## 🌟 Key Business Features
+## 🌟 Modular Multi-Page Architecture
 
-### 1. 🏢 Commercial Expense & Revenue Tracker (`index.html`)
-- **Business Categorization:** Track client invoices, SaaS subscriptions, consulting fees, payroll/salaries, office rent, AWS/cloud hosting, marketing ads, hardware, and legal/tax fees.
-- **Real-Time Financial Dashboard:** Live KPI cards for Net Operating Balance, Gross Business Revenue, Total Operating Expenses, and Operating Margin %.
-- **Interactive Visualizations (Chart.js):** Cost breakdown by category doughnut chart and monthly expenditure trend analysis.
+The platform has been organized into dedicated, high-performance individual pages:
 
-### 2. 🔐 Dedicated Executive Admin Portal (`admin.html`)
-- **Executive KPIs:** Live company-wide financial performance metrics.
-- **📄 Official Financial Statement Generator (Profit & Loss / Income & Expense Statement):**
-  - Generate statements by preset periods (*This Month*, *Last Month*, *This Quarter*, *All-Time*) or *Custom Date Ranges*.
-  - View revenue stream breakdowns, operating expenditure breakdowns, net profit/loss, and margin calculations.
-  - **Print / Save as PDF Layout:** Clean, black-and-white, high-contrast document format with company header (GSTIN / Tax ID), itemized ledger, and auditor signature lines.
-  - **Export CSV:** One-click spreadsheet download.
-- **📜 Tamper-Evident Audit Ledger:** Complete chronological timeline of every transaction recorded, modified, deleted, or restored.
-- **🛡️ Immutable Deletion Archive:** Deleted transactions are **never permanently purged**. They are preserved in the audit ledger and can be restored back to active status at any time with one click.
-- **⚙️ Business Profile Settings:** Configure Company Name and Tax ID / GSTIN for official statement generation.
-
-### 3. 🗄️ Zero-Dependency SQLite Backend (`server.py`)
-- Built using Python's standard library (`http.server`, `sqlite3`, `json`) — runs out-of-the-box on any system with zero external pip dependencies.
-- **Dual-Mode Hybrid Engine:** Works with the SQLite backend API when running `py server.py` and gracefully falls back to in-browser `LocalStorage Mode` when deployed statically.
-
----
-
-## 🛠️ Architecture & Tech Stack
-
-| Layer | Technology | Purpose |
+| Page | File | Purpose |
 | :--- | :--- | :--- |
-| **Backend API** | **Python Standard Library** (`http.server`, `sqlite3`) | Zero-dependency REST API and static file server |
-| **Database** | **SQLite3** (`database.db`) | ACID-compliant persistent database with soft-deletes and audit logging |
-| **Admin Portal** | **HTML5, CSS3 & JavaScript** (`admin.html`, `admin.css`, `admin.js`) | Executive dashboard, statement generator, and audit ledger |
-| **Main Tracker** | **HTML5, CSS3 & JavaScript** (`index.html`, `style.css`, `script.js`) | Staff expense entry and real-time category charts |
-| **Charts** | **[Chart.js](https://www.chartjs.org/) (CDN)** | Category breakdown and monthly trend charts |
-| **Typography & Icons** | **Google Fonts & Font Awesome 6.5** | Plus Jakarta Sans & Inter corporate typography |
+| **📊 Dashboard** | [`index.html`](index.html) | Executive KPIs (Gross Revenue, Operating Expenses, Net Profit, Margin %), Category Doughnut Chart, Monthly Trends, Recent Ledger |
+| **💳 Transactions** | [`transactions.html`](transactions.html) | Add Transaction Modal, Advanced Live Search, Filters (Revenue vs Expense, Category, Date Sort), Itemized Ledger |
+| **📈 Analytics & Costs** | [`analytics.html`](analytics.html) | Deep Cost Intelligence, Capital Flow Line Chart, Departmental Spending Distribution Table, Key Highlights |
+| **📄 Financial Statement** | [`statements.html`](statements.html) | Official Profit & Loss (P&L) Generator by Period (*This Month*, *Quarter*, *Custom Range*), Printable Executive PDF Sheet with Auditor Signature Lines, CSV Export |
+| **📜 Audit Ledger** | [`audit-logs.html`](audit-logs.html) | Chronological tamper-evident log of all creations, soft-deletions, restorations, and resets with server timestamps |
+| **🗄️ Archived / Trash** | [`trash.html`](trash.html) | Permanent archive of soft-deleted transactions with instant one-click **"Restore to Active"** capability (no permanent purge policy) |
+| **⚙️ Settings** | [`settings.html`](settings.html) | Configure Company Profile (Legal Name, GSTIN / Tax ID, Financial Year), Sample Dataset Seeder, System Data Reset |
 
 ---
 
-## 🚀 How to Run Locally
+## 🛠️ Technology Stack
 
-### 1. Full-Stack Mode with SQLite Backend & Admin Portal (Recommended)
-1. Open PowerShell or Command Prompt in the project folder:
+| Layer | Technology |
+| :--- | :--- |
+| **Backend API** | **Python Standard Library** (`http.server`, `sqlite3`, `json`) — Zero external pip dependencies |
+| **Database** | **SQLite3** (`database.db`) — ACID-compliant local database with soft-deletes and immutable audit trail |
+| **Frontend Core** | **HTML5 & Vanilla JavaScript ES6+** (`shared.js`) — Multi-page client engine with hybrid LocalStorage fallback |
+| **Design System** | **CSS3 Custom Properties & Grid** (`shared.css`) — Corporate dark/light theme tokens, responsive sidebar |
+| **Charts** | **[Chart.js 4.4.1](https://www.chartjs.org/)** — Canvas-based analytics and growth trends |
+| **Typography & Icons** | **Google Fonts (Plus Jakarta Sans & Inter)** & **Font Awesome 6.5** |
+
+---
+
+## 🚀 How to Run the Application
+
+### Option 1: Full-Stack Mode with SQLite Backend (Recommended)
+
+1. Open PowerShell or Terminal in the project folder:
    ```powershell
    cd "C:\Users\R Hareeswar\.gemini\antigravity\scratch\expense-tracker"
    ```
-2. Start the server:
+2. Start the backend server:
    ```powershell
    py server.py
    ```
    *(or `python server.py`)*
-3. Access the portals in your web browser:
-   - **General Business Tracker:** [http://localhost:5000](http://localhost:5000)
-   - **Executive Admin Portal:** [http://localhost:5000/admin.html](http://localhost:5000/admin.html)
+3. Open your browser and navigate to:
+   - **Dashboard:** [http://localhost:5000](http://localhost:5000)
+   - **Transactions:** [http://localhost:5000/transactions.html](http://localhost:5000/transactions.html)
+   - **Analytics:** [http://localhost:5000/analytics.html](http://localhost:5000/analytics.html)
+   - **Financial Statement:** [http://localhost:5000/statements.html](http://localhost:5000/statements.html)
+   - **Audit Ledger:** [http://localhost:5000/audit-logs.html](http://localhost:5000/audit-logs.html)
+   - **Archived Trash:** [http://localhost:5000/trash.html](http://localhost:5000/trash.html)
+   - **Settings:** [http://localhost:5000/settings.html](http://localhost:5000/settings.html)
 
-### 2. Standalone Static Mode
-- Double-click **`index.html`** or **`admin.html`** to run in offline LocalStorage mode.
+---
+
+### Option 2: Standalone Static Mode (GitHub Pages / Offline)
+
+- Double-click **`index.html`** or open any `.html` page in your browser.
+- The platform automatically detects static hosting and switches smoothly to **`💾 LocalStorage Mode`**.
 
 ---
 
@@ -68,35 +70,17 @@ A modern, high-performance **Business Financial Management & Expense Tracking Pl
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/transactions` | Fetch all active transactions |
-| `POST` | `/api/transactions` | Record a new transaction & write `CREATE` audit log |
-| `DELETE` | `/api/transactions/<id>` | Archive a transaction (soft-delete) & write `DELETE` audit log |
-| `GET` | `/api/admin/statement` | Generate filtered financial statement with revenue, expenses & profit metrics |
-| `GET` | `/api/admin/audit-logs` | Fetch full tamper-evident audit ledger |
-| `GET` | `/api/admin/deleted` | Fetch all archived/deleted transactions |
-| `POST` | `/api/admin/restore/<id>` | Restore an archived transaction back to active status |
-| `GET` / `POST` | `/api/business-profile` | Get or update company name & tax details |
-| `GET` | `/api/health` | Service health status check |
-
----
-
-## 📂 Repository File Structure
-
-```text
-expense-tracker/
-├── server.py           # Python HTTP server & SQLite REST API backend
-├── database.db         # Persistent SQLite database (transactions & audit logs)
-├── index.html          # Main Business Expense & Revenue Tracker UI
-├── style.css           # Corporate design system & responsive stylesheet
-├── script.js           # Client-side tracker logic & dual-mode API connectors
-├── admin.html          # Dedicated Executive Admin Portal UI
-├── admin.css           # Admin portal styles & printable statement layout
-├── admin.js            # Admin controller, statement generator & audit ledger
-├── LICENSE             # MIT License
-├── README.md           # Project documentation
-└── assets/
-    └── screenshot.png  # Application screenshot preview
-```
+| `GET` | `/api/transactions` | Retrieve all active transactions |
+| `POST` | `/api/transactions` | Record transaction & log `CREATE` event |
+| `DELETE` | `/api/transactions/<id>` | Soft-delete transaction & log `DELETE` event |
+| `POST` | `/api/admin/restore/<id>` | Restore soft-deleted transaction & log `RESTORE` event |
+| `GET` | `/api/admin/statement` | Generate filtered P&L financial statement |
+| `GET` | `/api/admin/audit-logs` | Retrieve full chronological audit ledger |
+| `GET` | `/api/admin/deleted` | Retrieve soft-deleted records |
+| `GET` / `POST` | `/api/business-profile` | Get or update company profile and tax details |
+| `POST` | `/api/sample-data` | Seed demo business transactions into SQLite |
+| `POST` | `/api/reset` | Archive all active records into audit ledger |
+| `GET` | `/api/health` | Backend health status |
 
 ---
 

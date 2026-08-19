@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Apex Business Finance — Settings & Profile Configuration" />
+  <title>Settings — Apex Business Finance</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="shared.css" />
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <div class="sidebar-title-wrap">
+        <span class="sidebar-app-name">Apex Finance</span>
+        <span class="sidebar-company-name">Apex Business Solutions</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">Overview</span>
+      <a href="index.html" class="nav-link">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="transactions.html" class="nav-link">
+        <i class="fa-solid fa-receipt"></i>
+        <span>Transactions</span>
+      </a>
+      <a href="analytics.html" class="nav-link">
+        <i class="fa-solid fa-chart-column"></i>
+        <span>Analytics & Costs</span>
+      </a>
+
+      <span class="nav-section-title">Executive & Audit</span>
+      <a href="statements.html" class="nav-link">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>Financial Statement</span>
+      </a>
+      <a href="audit-logs.html" class="nav-link">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Audit Ledger</span>
+      </a>
+      <a href="trash.html" class="nav-link">
+        <i class="fa-solid fa-box-archive"></i>
+        <span>Archived / Trash</span>
+      </a>
+      <a href="settings.html" class="nav-link active">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-details">
+          <span class="user-name">Executive Admin</span>
+          <span class="user-role">Finance Controller</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="app-main-content">
+    
+    <!-- Top Bar -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Sidebar Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="page-heading">
+          <h1 class="page-title">Business Settings &amp; Configuration</h1>
+          <span class="page-breadcrumb">Apex Business Finance / Profile &amp; Preferences</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <span class="backend-badge" id="backendStatusBadge">
+          <span class="status-dot"></span>
+          <span id="backendStatusText">Checking storage...</span>
+        </span>
+
+        <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
+          <i class="fa-solid fa-sun icon-sun"></i>
+          <i class="fa-solid fa-moon icon-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Body -->
+    <div class="page-body">
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;" class="settings-grid">
+        
+        <!-- Business Profile Form -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Corporate Organization Profile</h2>
+              <p class="card-subtitle">These details will appear on official generated financial statements and reports.</p>
+            </div>
+          </div>
+
+          <form id="profileForm" style="display:flex; flex-direction:column; gap:1.25rem;">
+            <div class="form-group">
+              <label for="companyNameInput" class="form-label">Company / Legal Business Name *</label>
+              <input type="text" id="companyNameInput" class="admin-input" required />
+            </div>
+
+            <div class="form-group">
+              <label for="taxIdInput" class="form-label">GSTIN / Tax ID / Registration Number</label>
+              <input type="text" id="taxIdInput" class="admin-input" placeholder="e.g. GSTIN: 27AABCU9603R1ZN" />
+            </div>
+
+            <div class="form-group">
+              <label for="fyInput" class="form-label">Financial Accounting Year</label>
+              <input type="text" id="fyInput" class="admin-input" value="2026-2027" />
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="align-self:flex-start;">
+              <i class="fa-solid fa-floppy-disk"></i> Save Profile Settings
+            </button>
+          </form>
+        </div>
+
+        <!-- Database Maintenance & Actions -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Data Management &amp; Seed Controls</h2>
+              <p class="card-subtitle">Manage sample datasets and system resets</p>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:1.25rem;">
+            
+            <div style="padding:1rem; background:var(--bg-card-subtle); border:1px solid var(--border-color); border-radius:var(--radius-md);">
+              <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.35rem;">Load Demo Business Transactions</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">Seed realistic business transactions (Retainers, AWS Cloud, Payroll, Office Rent) into the SQLite ledger.</p>
+              <button id="loadSampleBtn" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Populate Sample Dataset
+              </button>
+            </div>
+
+            <div style="padding:1rem; background:var(--expense-bg); border:1px solid var(--expense-border); border-radius:var(--radius-md);">
+              <h3 style="font-size:0.95rem; font-weight:700; color:var(--expense); margin-bottom:0.35rem;">Archive All Active Transactions</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">Soft-deletes all active transactions and archives them into the audit ledger for compliance.</p>
+              <button id="resetAllBtn" class="btn btn-danger btn-sm">
+                <i class="fa-solid fa-box-archive"></i> Archive All Active Records
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Shared Engine Script -->
+  <script src="shared.js"></script>
+
+  <!-- Settings Page Controller -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadSettings();
+      setupSettingsListeners();
+    });
+
+    async function loadSettings() {
+      const p = await loadGlobalBusinessProfile();
+      document.getElementById('companyNameInput').value = p.company_name || '';
+      document.getElementById('taxIdInput').value = p.tax_id || '';
+      document.getElementById('fyInput').value = p.financial_year || '2026-2027';
+    }
+
+    function setupSettingsListeners() {
+      document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const company_name = document.getElementById('companyNameInput').value.trim() || 'Apex Business Solutions Pvt. Ltd.';
+        const tax_id = document.getElementById('taxIdInput').value.trim();
+        const financial_year = document.getElementById('fyInput').value.trim() || '2026-2027';
+
+        const updatedProfile = { company_name, tax_id, financial_year };
+
+        try {
+          const res = await fetch(`${API_BASE}/api/business-profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedProfile),
+            signal: AbortSignal.timeout(2000)
+          });
+          if (res.ok) {
+            showToast('Business profile updated in SQLite ledger', 'success');
+          } else {
+            showToast('Profile updated locally', 'info');
+          }
+        } catch (err) {
+          showToast('Profile saved in local storage mode', 'info');
+        }
+
+        localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(updatedProfile));
+        applyProfileToUI(updatedProfile);
+      });
+
+      document.getElementById('loadSampleBtn').addEventListener('click', async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/sample-data`, { method: 'POST', signal: AbortSignal.timeout(2000) });
+          if (res.ok) {
+            showToast('Sample dataset loaded into SQLite database', 'success');
+            return;
+          }
+        } catch (e) {}
+
+        localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(DEFAULT_SAMPLE_DATA));
+        showToast('Sample dataset reloaded into local storage', 'success');
+      });
+
+      document.getElementById('resetAllBtn').addEventListener('click', async () => {
+        if (confirm('Archive all active records into the corporate audit ledger?')) {
+          try {
+            const res = await fetch(`${API_BASE}/api/reset`, { method: 'POST', signal: AbortSignal.timeout(2000) });
+            if (res.ok) {
+              showToast('All active records archived into audit ledger', 'info');
+              return;
+            }
+          } catch (e) {}
+
+          localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify([]));
+          showToast('Active records archived locally', 'info');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

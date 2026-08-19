@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Apex Business Finance — Official Financial Statement (P&L) Generator" />
+  <title>Financial Statement — Apex Business Finance</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="shared.css" />
+
+  <style>
+    /* Statement Paper Styles */
+    .statement-sheet {
+      background-color: #ffffff;
+      color: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 3rem 2.5rem;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .stmt-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 1.25rem;
+      gap: 1.5rem;
+    }
+
+    .stmt-company-title {
+      font-size: 1.65rem;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .stmt-doc-type {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #2563eb;
+      letter-spacing: 0.08em;
+      margin-top: 0.35rem;
+    }
+
+    .stmt-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .stmt-kpi-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stmt-kpi-box.highlight { background: #eff6ff; border-color: #bfdbfe; }
+    .stmt-kpi-label { font-size: 0.725rem; font-weight: 700; text-transform: uppercase; color: #64748b; }
+    .stmt-kpi-val { font-size: 1.35rem; font-weight: 800; color: #0f172a; }
+
+    .stmt-tables-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .stmt-subtable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .stmt-subtable th {
+      padding: 0.65rem 0.75rem;
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 700;
+      border-bottom: 2px solid #cbd5e1;
+      text-align: left;
+    }
+
+    .stmt-subtable td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid #e2e8f0;
+      color: #1e293b;
+    }
+
+    .stmt-sign-footer {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
+    }
+
+    .stmt-signature-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .stmt-sign-line {
+      width: 180px;
+      height: 1px;
+      background: #0f172a;
+      margin-top: 2.5rem;
+    }
+
+    @media print {
+      body { background: #ffffff !important; color: #000000 !important; }
+      .app-sidebar, .app-topbar, .no-print, .toast-container { display: none !important; }
+      .app-main-content { margin-left: 0 !important; width: 100% !important; }
+      .page-body { padding: 0 !important; }
+      .statement-sheet { border: none !important; box-shadow: none !important; padding: 0 !important; }
+      .stmt-header { border-bottom: 2pt solid #000000 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <div class="sidebar-title-wrap">
+        <span class="sidebar-app-name">Apex Finance</span>
+        <span class="sidebar-company-name">Apex Business Solutions</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">Overview</span>
+      <a href="index.html" class="nav-link">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="transactions.html" class="nav-link">
+        <i class="fa-solid fa-receipt"></i>
+        <span>Transactions</span>
+      </a>
+      <a href="analytics.html" class="nav-link">
+        <i class="fa-solid fa-chart-column"></i>
+        <span>Analytics & Costs</span>
+      </a>
+
+      <span class="nav-section-title">Executive & Audit</span>
+      <a href="statements.html" class="nav-link active">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>Financial Statement</span>
+      </a>
+      <a href="audit-logs.html" class="nav-link">
+        <i class="fa-solid fa-list-check"></i>
+        <span>Audit Ledger</span>
+      </a>
+      <a href="trash.html" class="nav-link">
+        <i class="fa-solid fa-box-archive"></i>
+        <span>Archived / Trash</span>
+      </a>
+      <a href="settings.html" class="nav-link">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-details">
+          <span class="user-name">Executive Admin</span>
+          <span class="user-role">Finance Controller</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="app-main-content">
+    
+    <!-- Top Bar -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Sidebar Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="page-heading">
+          <h1 class="page-title">Financial Statement Generator</h1>
+          <span class="page-breadcrumb">Apex Business Finance / Profit &amp; Loss Reports</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <span class="backend-badge" id="backendStatusBadge">
+          <span class="status-dot"></span>
+          <span id="backendStatusText">Checking storage...</span>
+        </span>
+
+        <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
+          <i class="fa-solid fa-sun icon-sun"></i>
+          <i class="fa-solid fa-moon icon-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Body -->
+    <div class="page-body">
+      
+      <!-- Toolbar Controls (No Print) -->
+      <div class="card no-print">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+          
+          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <label class="form-label" style="margin:0;">Statement Period:</label>
+            <select id="stmtPeriodPreset" class="admin-select" style="width: auto;">
+              <option value="this-month" selected>This Month</option>
+              <option value="last-month">Last Month</option>
+              <option value="this-quarter">This Quarter</option>
+              <option value="all">All-Time History</option>
+              <option value="custom">Custom Date Range</option>
+            </select>
+
+            <div id="customDateWrap" style="display:none; gap:0.5rem; align-items:center;">
+              <input type="date" id="stmtFromDate" class="admin-input" style="width: auto;" />
+              <span>to</span>
+              <input type="date" id="stmtToDate" class="admin-input" style="width: auto;" />
+            </div>
+
+            <button id="generateStmtBtn" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-arrows-rotate"></i> Generate
+            </button>
+          </div>
+
+          <div style="display:flex; gap:0.5rem;">
+            <button id="printBtn" class="btn btn-success btn-sm">
+              <i class="fa-solid fa-print"></i> Print Statement (PDF)
+            </button>
+            <button id="exportCsvBtn" class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-file-excel"></i> Export CSV
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Printable Statement Sheet -->
+      <div class="statement-sheet" id="printDoc">
+        
+        <!-- Header -->
+        <div class="stmt-header">
+          <div>
+            <h2 class="stmt-company-title" id="stmtCompanyHeading">Apex Business Solutions Pvt. Ltd.</h2>
+            <p style="font-size:0.85rem; color:#475569; font-weight:600; margin-top:0.2rem;" id="stmtTaxMeta">GSTIN: 27AABCU9603R1ZN &bull; Financial Year: 2026-2027</p>
+            <p class="stmt-doc-type">OFFICIAL STATEMENT OF INCOME &amp; EXPENSES (PROFIT &amp; LOSS)</p>
+          </div>
+          <div style="text-align:right; font-size:0.825rem; color:#334155; display:flex; flex-direction:column; gap:0.25rem;">
+            <div><span>Statement Period:</span> <strong id="stmtPeriodDisplay">Current Month</strong></div>
+            <div><span>Generated On:</span> <strong id="stmtDateDisplay">18 Aug 2026</strong></div>
+            <div><span>Status:</span> <strong style="color:#059669;">Audited &amp; Certified</strong></div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="stmt-kpis">
+          <div class="stmt-kpi-box">
+            <span class="stmt-kpi-label">1. Gross Revenue</span>
+            <span class="stmt-kpi-val" style="color:#059669;" id="stmtRevenue">₹0.00</span>
+          </div>
+          <div class="stmt-kpi-box">
+            <span class="stmt-kpi-label">2. Operating Expenses</span>
+            <span class="stmt-kpi-val" style="color:#dc2626;" id="stmtExpense">₹0.00</span>
+          </div>
+          <div class="stmt-kpi-box highlight">
+            <span class="stmt-kpi-label">3. Net Operating Profit</span>
+            <span class="stmt-kpi-val" style="color:#2563eb;" id="stmtNetProfit">₹0.00</span>
+          </div>
+          <div class="stmt-kpi-box">
+            <span class="stmt-kpi-label">4. Profit Margin</span>
+            <span class="stmt-kpi-val" id="stmtMargin">0.00%</span>
+          </div>
+        </div>
+
+        <!-- Breakdown Split -->
+        <div class="stmt-tables-split">
+          
+          <div>
+            <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:0.65rem; color:#059669;">
+              <i class="fa-solid fa-circle-arrow-down"></i> Revenue Inflow Breakdown
+            </h3>
+            <table class="stmt-subtable">
+              <thead><tr><th>Revenue Stream</th><th class="text-right">Amount (INR)</th></tr></thead>
+              <tbody id="stmtRevenueRows"></tbody>
+            </table>
+          </div>
+
+          <div>
+            <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:0.65rem; color:#dc2626;">
+              <i class="fa-solid fa-circle-arrow-up"></i> Operating Costs Breakdown
+            </h3>
+            <table class="stmt-subtable">
+              <thead><tr><th>Cost Category</th><th class="text-right">Amount (INR)</th></tr></thead>
+              <tbody id="stmtExpenseRows"></tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- Full Line Item Ledger -->
+        <div>
+          <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:0.65rem;">Itemized Transaction Ledger</h3>
+          <table class="stmt-subtable">
+            <thead>
+              <tr><th>Date</th><th>Description</th><th>Category</th><th>Classification</th><th class="text-right">Amount</th></tr>
+            </thead>
+            <tbody id="stmtLedgerRows"></tbody>
+          </table>
+        </div>
+
+        <!-- Footer & Signatures -->
+        <div class="stmt-sign-footer">
+          <div style="font-size:0.75rem; color:#64748b; max-width:450px; line-height:1.4;">
+            <p><strong>Certification:</strong> Extracted from corporate SQLite database records.</p>
+            <p>All deletions and changes are securely logged in the immutable audit ledger.</p>
+          </div>
+          <div style="display:flex; gap:2.5rem;">
+            <div class="stmt-signature-box">
+              <div class="stmt-sign-line"></div>
+              <span>Prepared By (Accountant)</span>
+            </div>
+            <div class="stmt-signature-box">
+              <div class="stmt-sign-line"></div>
+              <span>Authorized Signatory (Admin)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Shared Engine Script -->
+  <script src="shared.js"></script>
+
+  <!-- Statement Controller -->
+  <script>
+    let statementTransactions = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      setupListeners();
+      await loadGlobalBusinessProfile();
+      await generateStatement('this-month');
+    });
+
+    function setupListeners() {
+      const preset = document.getElementById('stmtPeriodPreset');
+      const customWrap = document.getElementById('customDateWrap');
+
+      preset.addEventListener('change', () => {
+        if (preset.value === 'custom') {
+          customWrap.style.display = 'flex';
+        } else {
+          customWrap.style.display = 'none';
+          generateStatement(preset.value);
+        }
+      });
+
+      document.getElementById('generateStmtBtn').addEventListener('click', () => {
+        generateStatement(preset.value);
+      });
+
+      document.getElementById('printBtn').addEventListener('click', () => {
+        window.print();
+      });
+
+      document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
+    }
+
+    async function generateStatement(preset) {
+      await loadGlobalBusinessProfile();
+      const all = await fetchTransactions();
+      const now = new Date();
+      let startDate = '';
+      let endDate = '';
+      let periodLabel = '';
+
+      if (preset === 'this-month') {
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        startDate = `${y}-${m}-01`;
+        endDate = new Date(y, now.getMonth() + 1, 0).toISOString().split('T')[0];
+        periodLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      } else if (preset === 'last-month') {
+        const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const y = last.getFullYear();
+        const m = String(last.getMonth() + 1).padStart(2, '0');
+        startDate = `${y}-${m}-01`;
+        endDate = new Date(y, last.getMonth() + 1, 0).toISOString().split('T')[0];
+        periodLabel = last.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+      } else if (preset === 'this-quarter') {
+        const qMonth = Math.floor(now.getMonth() / 3) * 3;
+        startDate = new Date(now.getFullYear(), qMonth, 1).toISOString().split('T')[0];
+        endDate = new Date(now.getFullYear(), qMonth + 3, 0).toISOString().split('T')[0];
+        periodLabel = `Q${Math.floor(now.getMonth() / 3) + 1} (${startDate} to ${endDate})`;
+      } else if (preset === 'custom') {
+        startDate = document.getElementById('stmtFromDate').value;
+        endDate = document.getElementById('stmtToDate').value;
+
+        if (startDate && endDate && startDate > endDate) {
+          showToast('Start date cannot be after end date', 'error');
+          return;
+        }
+
+        periodLabel = `${startDate || 'Beginning'} to ${endDate || 'Present'}`;
+      } else {
+        periodLabel = 'All-Time Financial History';
+      }
+
+      document.getElementById('stmtPeriodDisplay').textContent = periodLabel;
+      document.getElementById('stmtDateDisplay').textContent = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      // Filter transactions
+      statementTransactions = all.filter((t) => {
+        if (startDate && t.date < startDate) return false;
+        if (endDate && t.date > endDate) return false;
+        return true;
+      });
+
+      renderStatementDocument(statementTransactions);
+    }
+
+    function renderStatementDocument(txs) {
+      let rev = 0;
+      let exp = 0;
+      const revMap = {};
+      const expMap = {};
+
+      txs.forEach((t) => {
+        const amt = Number(t.amount);
+        if (t.type === 'income') {
+          rev += amt;
+          revMap[t.category] = (revMap[t.category] || 0) + amt;
+        } else {
+          exp += amt;
+          expMap[t.category] = (expMap[t.category] || 0) + amt;
+        }
+      });
+
+      const net = rev - exp;
+      const margin = rev > 0 ? ((net / rev) * 100).toFixed(2) : '0.00';
+
+      document.getElementById('stmtRevenue').textContent = formatCurrency(rev);
+      document.getElementById('stmtExpense').textContent = formatCurrency(exp);
+      document.getElementById('stmtNetProfit').textContent = formatCurrency(net);
+      document.getElementById('stmtMargin').textContent = `${margin}%`;
+
+      // Revenue breakdown
+      const revTbody = document.getElementById('stmtRevenueRows');
+      revTbody.innerHTML = '';
+      const revEntries = Object.entries(revMap);
+      if (revEntries.length === 0) {
+        revTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">No revenue streams</td></tr>';
+      } else {
+        revEntries.forEach(([cat, amt]) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><strong>${escapeHtml(cat)}</strong></td><td class="text-right">${formatCurrency(amt)}</td>`;
+          revTbody.appendChild(tr);
+        });
+      }
+
+      // Expense breakdown
+      const expTbody = document.getElementById('stmtExpenseRows');
+      expTbody.innerHTML = '';
+      const expEntries = Object.entries(expMap);
+      if (expEntries.length === 0) {
+        expTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">No operating costs</td></tr>';
+      } else {
+        expEntries.forEach(([cat, amt]) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><strong>${escapeHtml(cat)}</strong></td><td class="text-right">${formatCurrency(amt)}</td>`;
+          expTbody.appendChild(tr);
+        });
+      }
+
+      // Ledger rows
+      const ledgerTbody = document.getElementById('stmtLedgerRows');
+      ledgerTbody.innerHTML = '';
+      if (txs.length === 0) {
+        ledgerTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">No transactions in selected period</td></tr>';
+      } else {
+        txs.forEach((t) => {
+          const isInc = t.type === 'income';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${formatDate(t.date)}</td>
+            <td><strong>${escapeHtml(t.description)}</strong></td>
+            <td>${escapeHtml(t.category)}</td>
+            <td><span class="badge ${isInc ? 'badge-income' : 'badge-expense'}">${t.type.toUpperCase()}</span></td>
+            <td class="text-right" style="color:${isInc ? '#059669' : '#dc2626'}; font-weight:700;">
+              ${isInc ? '+' : '-'}${formatCurrency(t.amount)}
+            </td>
+          `;
+          ledgerTbody.appendChild(tr);
+        });
+      }
+    }
+
+    function exportCsv() {
+      if (statementTransactions.length === 0) {
+        showToast('No statement data to export', 'info');
+        return;
+      }
+      const headers = ['Transaction ID', 'Date', 'Type', 'Category', 'Description', 'Amount'];
+      const rows = statementTransactions.map((t) => [`"${t.id}"`, `"${t.date}"`, `"${t.type.toUpperCase()}"`, `"${t.category}"`, `"${t.description.replace(/"/g, '""')}"`, t.amount]);
+      const csv = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csv));
+      link.setAttribute('download', `Financial_Statement_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>

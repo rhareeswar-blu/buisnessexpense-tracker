@@ -1,6 +1,15 @@
-MIT License
+==============================================================================
+APEX BUSINESS FINANCE — ENTERPRISE SOFTWARE LICENSE & TERMS OF USE
+==============================================================================
 
-Copyright (c) 2026 Expense Tracker
+MIT License with Supplemental Commercial, Privacy & Financial Disclaimers
+
+Copyright (c) 2026 R Hareeswar (rhareeswar-blu)
+Apex Business Solutions Pvt. Ltd. & Project Contributors.
+
+------------------------------------------------------------------------------
+1. GRANT OF LICENSE
+------------------------------------------------------------------------------
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -12,10 +21,74 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
+------------------------------------------------------------------------------
+2. PERMITTED RIGHTS & USES
+------------------------------------------------------------------------------
+
+Under this license, authorized users and organizations are granted:
+  (a) Commercial Use: Permission to deploy, operate, and utilize the Software
+      within commercial business environments, corporate entities, and startups.
+  (b) Modification & Derivative Works: Permission to adapt, modify, extend, or
+      rebrand the codebase, templates, and UI design systems.
+  (c) Multi-User Deployment: Permission to host the server backend and SQLite
+      ledger across internal enterprise networks and team intranets.
+  (d) Private & Academic Use: Permission for research, evaluation, testing,
+      and non-commercial deployments.
+
+------------------------------------------------------------------------------
+3. ATTRIBUTION & INTEGRITY CONDITIONS
+------------------------------------------------------------------------------
+
+Any redistribution, sublicensing, or publication of the Software (or any
+substantial portion thereof) in source or binary form must retain:
+  (a) The original copyright notices and author attributions.
+  (b) A copy of this LICENSE document.
+  (c) Clear demarcation of any material modifications made to original files.
+
+------------------------------------------------------------------------------
+4. FINANCIAL, ACCOUNTING & STATUTORY DISCLAIMER (IMPORTANT)
+------------------------------------------------------------------------------
+
+THE SOFTWARE IS DESIGNED AS AN OPERATIONAL EXPENSE TRACKING AND INTERNAL
+ACCOUNTING AID. IT IS PROVIDED FOR GENERAL INFORMATIONAL AND BUSINESS
+MANAGEMENT PURPOSES ONLY.
+
+  (a) NO FINANCIAL OR TAX ADVICE: The Software, its generated profit & loss
+      (P&L) statements, audit ledgers, and financial summaries do not
+      constitute certified public accounting (CPA), statutory tax, legal,
+      or financial advisory advice.
+  (b) REGULATORY COMPLIANCE: Organizations utilizing the Software are solely
+      responsible for ensuring that their financial reporting complies with
+      all applicable local, national, and international tax laws, GAAP,
+      IFRS, and statutory filing obligations.
+  (c) VERIFICATION REQUIREMENT: All financial records, currency calculations,
+      tax metrics, and statements should be independently audited and
+      verified by a certified financial controller or chartered accountant.
+
+------------------------------------------------------------------------------
+5. DATA PRIVACY & LOCAL DATABASE STORAGE
+------------------------------------------------------------------------------
+
+The Software operates using an embedded local SQLite database (database.db)
+with Write-Ahead Logging (WAL) and client-side web storage.
+
+  (a) LOCAL-FIRST PRIVACY: The Software does not transmit financial telemetry,
+      user passwords, or company records to external third-party servers.
+  (b) BACKUP RESPONSIBILITY: The licensee assumes all responsibility for
+      regular database backups, encryption at rest, secure hosting, and
+      access control within their administrative environment.
+
+------------------------------------------------------------------------------
+6. DISCLAIMER OF WARRANTIES
+------------------------------------------------------------------------------
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, TITLE, AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS, OR CONTRIBUTORS BE LIABLE
+FOR ANY CLAIM, DAMAGES, LOSS OF PROFITS, BUSINESS INTERRUPTION, LOSS OF DATA,
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+==============================================================================

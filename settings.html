@@ -152,8 +152,50 @@
         </div>
       </div>
 
-      <!-- Quick Link to Executive Security Settings -->
+      <!-- Personal Account & Password Card -->
       <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">My Account &amp; Password Security</h3>
+            <p class="card-subtitle">Manage your personal login credentials and security settings</p>
+          </div>
+        </div>
+        <div class="content-card-body">
+          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color);">
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Account Name</span>
+              <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);" id="myAccountName">...</div>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Email Address</span>
+              <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);" id="myAccountEmail">...</div>
+            </div>
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Role &amp; Department</span>
+              <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);" id="myAccountRoleDept">...</div>
+            </div>
+          </div>
+
+          <form id="changePasswordForm" style="display: flex; flex-direction: column; gap: 1.25rem; max-width: 600px;">
+            <div class="form-group">
+              <label class="form-label" for="newPassword">New Password (min. 6 chars):</label>
+              <input type="password" id="newPassword" class="form-input" placeholder="Enter new password" required minlength="6" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="confirmPassword">Confirm New Password:</label>
+              <input type="password" id="confirmPassword" class="form-input" placeholder="Repeat new password" required minlength="6" />
+            </div>
+            <div>
+              <button type="submit" class="btn btn-secondary">
+                <i class="fa-solid fa-key"></i> Update My Password
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Quick Link to Executive Security Settings -->
+      <div class="content-card" id="adminPortalCard">
         <div class="content-card-header">
           <div class="card-title-group">
             <h3 class="card-title">Security Policies &amp; Team Management</h3>
@@ -174,8 +216,23 @@
   <script src="shared.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
+      const curUser = AuthManager.getCurrentUser();
+      if (!curUser) return;
+
+      document.getElementById('myAccountName').textContent = curUser.name;
+      document.getElementById('myAccountEmail').textContent = curUser.email;
+      document.getElementById('myAccountRoleDept').textContent = `${curUser.role.toUpperCase()} • ${curUser.department}`;
+
+      if (curUser.role !== 'admin') {
+        const adminCard = document.getElementById('adminPortalCard');
+        if (adminCard) adminCard.style.display = 'none';
+        const sideAdmin = document.getElementById('adminNavLink');
+        if (sideAdmin) sideAdmin.style.display = 'none';
+      }
+
       await loadCurrentProfile();
       setupProfileForm();
+      setupPasswordChangeForm();
     });
 
     async function loadCurrentProfile() {
@@ -191,7 +248,7 @@
         const company_name = document.getElementById('companyName').value.trim();
         const tax_id = document.getElementById('taxId').value.trim();
         const financial_year = document.getElementById('financialYear').value.trim();
-        const active = getActiveUser();
+        const active = AuthManager.getCurrentUser() || { name: 'Admin' };
 
         try {
           const res = await fetch(`${API_BASE}/api/business-profile`, {
@@ -206,6 +263,33 @@
         } catch (err) {
           showToast('Error saving settings', 'error');
         }
+      });
+    }
+
+    function setupPasswordChangeForm() {
+      document.getElementById('changePasswordForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const p1 = document.getElementById('newPassword').value;
+        const p2 = document.getElementById('confirmPassword').value;
+
+        if (p1 !== p2) {
+          showToast('Passwords do not match.', 'error');
+          return;
+        }
+
+        const curUser = AuthManager.getCurrentUser();
+        const hash = await sha256Hex(p1);
+
+        // Update in localStorage user store
+        const users = AuthManager.getAllUsers();
+        const idx = users.findIndex(u => u.id === curUser.id || u.email.toLowerCase() === curUser.email.toLowerCase());
+        if (idx !== -1) {
+          users[idx].password_hash = hash;
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+        }
+
+        showToast('Password updated successfully!', 'success');
+        document.getElementById('changePasswordForm').reset();
       });
     }
   </script>

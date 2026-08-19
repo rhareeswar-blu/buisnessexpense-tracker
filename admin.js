@@ -129,27 +129,17 @@ function setupAdminEventListeners() {
     const email = document.getElementById('newUserEmail').value.trim();
     const role = document.getElementById('newUserRole').value.trim();
     const dept = document.getElementById('newUserDept').value;
+    const password = document.getElementById('newUserPassword').value;
     const color = document.getElementById('newUserColor').value;
 
     try {
-      const active = getActiveUser();
-      const res = await fetch(`${API_BASE}/api/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-User-Name': active.name },
-        body: JSON.stringify({ name, email, role, department: dept, avatar_color: color })
-      });
-      const json = await res.json();
-      if (res.ok) {
-        showToast(`Team member "${name}" added.`, 'success');
-        addUserModal.classList.remove('active');
-        document.getElementById('addUserForm').reset();
-        await loadTeamUsers();
-        await loadTeamRoster();
-      } else {
-        showToast(json.message || 'Failed to add user', 'error');
-      }
+      await AuthManager.register(name, email, password, role, dept, color);
+      showToast(`Team member "${name}" created with password.`, 'success');
+      addUserModal.classList.remove('active');
+      document.getElementById('addUserForm').reset();
+      await loadTeamRoster();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message || 'Failed to add user', 'error');
     }
   });
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 ==============================================================================
-Apex Business Finance — Enterprise Multi-User Backend & Policy Engine
-Zero external dependencies (Python Standard Library: http.server, sqlite3, json)
+Apex Business Finance — Enterprise Multi-User Backend & Security Engine
+Zero external dependencies (Python Standard Library: http.server, sqlite3, hashlib, json)
 ==============================================================================
 """
 
@@ -11,6 +11,7 @@ import socketserver
 import json
 import sqlite3
 import os
+import hashlib
 import mimetypes
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
@@ -18,6 +19,11 @@ from datetime import datetime
 PORT = 5000
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, 'database.db')
+
+def hash_password(pwd: str) -> str:
+    """Hash password using SHA-256 with project salt."""
+    salt = "apex_finance_secure_salt_v2"
+    return hashlib.sha256((pwd + salt).encode('utf-8')).hexdigest()
 
 # ----------------------------------------------------------------------------
 # Database Setup & Connection
@@ -35,7 +41,42 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
-    # 1. Transactions Table
+    # 1. Users & Credentials Table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL,
+            department TEXT NOT NULL,
+            avatar_color TEXT DEFAULT '#6366f1',
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+    ''')
+
+    # Column migrations
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT DEFAULT ''")
+    except Exception:
+        pass
+
+    # Default Seed Users with Secure Hashed Passwords
+    default_users = [
+        ('usr_1', 'Elena Rostova', 'admin@apex.com', hash_password('admin123'), 'admin', 'Management', '#8b5cf6'),
+        ('usr_2', 'Alex Rivera', 'alex@apex.com', hash_password('user123'), 'user', 'Sales', '#3b82f6'),
+        ('usr_3', 'Priya Sharma', 'priya@apex.com', hash_password('user123'), 'user', 'Engineering', '#10b981'),
+        ('usr_4', 'Marcus Vance', 'marcus@apex.com', hash_password('user123'), 'user', 'Marketing', '#ec4899'),
+        ('usr_5', 'Sophia Chen', 'sophia.apex.com', hash_password('user123'), 'user', 'Operations', '#f59e0b')
+    ]
+    for u in default_users:
+        cursor.execute('''
+            INSERT OR REPLACE INTO users (id, name, email, password_hash, role, department, avatar_color, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        ''', u)
+
+    # 2. Transactions Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS transactions (
             id TEXT PRIMARY KEY,
@@ -50,27 +91,27 @@ def init_db():
             deleted_reason TEXT DEFAULT 'Deleted by user',
             user_id TEXT DEFAULT 'usr_1',
             user_name TEXT DEFAULT 'Elena Rostova',
+            user_email TEXT DEFAULT 'admin@apex.com',
             department TEXT DEFAULT 'Management',
             avatar_color TEXT DEFAULT '#8b5cf6'
         )
     ''')
 
-    # Ensure schema migrations for existing database files
-    migrations = [
-        ("ALTER TABLE transactions ADD COLUMN deleted_reason TEXT DEFAULT 'Deleted by user'"),
-        ("ALTER TABLE transactions ADD COLUMN deleted_at TEXT DEFAULT NULL"),
-        ("ALTER TABLE transactions ADD COLUMN user_id TEXT DEFAULT 'usr_1'"),
-        ("ALTER TABLE transactions ADD COLUMN user_name TEXT DEFAULT 'Elena Rostova'"),
-        ("ALTER TABLE transactions ADD COLUMN department TEXT DEFAULT 'Management'"),
-        ("ALTER TABLE transactions ADD COLUMN avatar_color TEXT DEFAULT '#8b5cf6'")
-    ]
-    for sql in migrations:
+    for sql in [
+        "ALTER TABLE transactions ADD COLUMN deleted_reason TEXT DEFAULT 'Deleted by user'",
+        "ALTER TABLE transactions ADD COLUMN deleted_at TEXT DEFAULT NULL",
+        "ALTER TABLE transactions ADD COLUMN user_id TEXT DEFAULT 'usr_1'",
+        "ALTER TABLE transactions ADD COLUMN user_name TEXT DEFAULT 'Elena Rostova'",
+        "ALTER TABLE transactions ADD COLUMN user_email TEXT DEFAULT 'admin@apex.com'",
+        "ALTER TABLE transactions ADD COLUMN department TEXT DEFAULT 'Management'",
+        "ALTER TABLE transactions ADD COLUMN avatar_color TEXT DEFAULT '#8b5cf6'"
+    ]:
         try:
             cursor.execute(sql)
         except Exception:
             pass
 
-    # 2. Immutable Audit Logs Table
+    # 3. Immutable Audit Logs Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS audit_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,12 +122,8 @@ def init_db():
             timestamp TEXT DEFAULT (datetime('now', 'localtime'))
         )
     ''')
-    try:
-        cursor.execute("ALTER TABLE audit_logs ADD COLUMN user_name TEXT DEFAULT 'System'")
-    except Exception:
-        pass
 
-    # 3. System Settings / Policy Table (Controls Immutable vs Purge mode)
+    # 4. System Settings / Policy Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS system_settings (
             key TEXT PRIMARY KEY,
@@ -99,34 +136,6 @@ def init_db():
         VALUES ('immutable_policy_enabled', '1')
     ''')
 
-    # 4. Multi-User Team Roster Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            role TEXT NOT NULL,
-            department TEXT NOT NULL,
-            avatar_color TEXT DEFAULT '#6366f1',
-            is_active INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT (datetime('now', 'localtime'))
-        )
-    ''')
-
-    # Seed Default Team Members
-    default_users = [
-        ('usr_1', 'Elena Rostova', 'elena.rostova@apexsolutions.com', 'Finance Director (Admin)', 'Management', '#8b5cf6'),
-        ('usr_2', 'Alex Rivera', 'alex.rivera@apexsolutions.com', 'Enterprise Sales Lead', 'Sales', '#3b82f6'),
-        ('usr_3', 'Priya Sharma', 'priya.sharma@apexsolutions.com', 'Principal Cloud Architect', 'Engineering', '#10b981'),
-        ('usr_4', 'Marcus Vance', 'marcus.vance@apexsolutions.com', 'Marketing Director', 'Marketing', '#ec4899'),
-        ('usr_5', 'Sophia Chen', 'sophia.chen@apexsolutions.com', 'Operations Specialist', 'Operations', '#f59e0b')
-    ]
-    for u in default_users:
-        cursor.execute('''
-            INSERT OR IGNORE INTO users (id, name, email, role, department, avatar_color, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
-        ''', u)
-
     # 5. Business Profile Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS business_profile (
@@ -137,7 +146,6 @@ def init_db():
             financial_year TEXT
         )
     ''')
-
     cursor.execute('''
         INSERT OR IGNORE INTO business_profile (id, company_name, tax_id, currency_symbol, financial_year)
         VALUES (1, 'Apex Business Solutions Pvt. Ltd.', 'GSTIN: 27AABCU9603R1ZN', '₹', '2026-2027')
@@ -145,14 +153,13 @@ def init_db():
 
     conn.commit()
 
-    # Seed initial business transactions if empty
     cursor.execute('SELECT COUNT(*) as count FROM transactions')
     if cursor.fetchone()['count'] == 0:
         seed_business_sample_data(conn)
 
     conn.close()
 
-def log_audit(conn, action, transaction_id, details_dict, user_name='Executive Admin'):
+def log_audit(conn, action, transaction_id, details_dict, user_name='System'):
     cursor = conn.cursor()
     details_json = json.dumps(details_dict, ensure_ascii=False)
     cursor.execute('''
@@ -163,21 +170,21 @@ def log_audit(conn, action, transaction_id, details_dict, user_name='Executive A
 
 def seed_business_sample_data(conn):
     samples = [
-        ('tx_b_1', 'Client Retainer — Enterprise Cloud Migration', 185000.0, 'income', 'Client Invoices & Retainers', datetime.now().strftime('%Y-%m-02'), 'usr_2', 'Alex Rivera', 'Sales', '#3b82f6'),
-        ('tx_b_2', 'Monthly Office Lease & Co-working Space', 45000.0, 'expense', 'Office Rent & Facilities', datetime.now().strftime('%Y-%m-03'), 'usr_5', 'Sophia Chen', 'Operations', '#f59e0b'),
-        ('tx_b_3', 'Core Engineering & Design Team Payroll', 95000.0, 'expense', 'Salaries & Payroll', datetime.now().strftime('%Y-%m-05'), 'usr_1', 'Elena Rostova', 'Management', '#8b5cf6'),
-        ('tx_b_4', 'SaaS Consulting & Custom API Integration', 68000.0, 'income', 'Consulting & Services', datetime.now().strftime('%Y-%m-07'), 'usr_3', 'Priya Sharma', 'Engineering', '#10b981'),
-        ('tx_b_5', 'AWS Cloud Infrastructure & Server Hosting', 12400.0, 'expense', 'Cloud & Software Tools', datetime.now().strftime('%Y-%m-09'), 'usr_3', 'Priya Sharma', 'Engineering', '#10b981'),
-        ('tx_b_6', 'Digital Marketing Campaign & Google Ads', 16500.0, 'expense', 'Marketing & Advertising', datetime.now().strftime('%Y-%m-12'), 'usr_4', 'Marcus Vance', 'Marketing', '#ec4899'),
-        ('tx_b_7', 'Quarterly High-Yield Corporate Deposit', 8500.0, 'income', 'Investments & Returns', datetime.now().strftime('%Y-%m-14'), 'usr_1', 'Elena Rostova', 'Management', '#8b5cf6'),
-        ('tx_b_8', 'Office Gigabit Internet & Power Utilities', 4800.0, 'expense', 'Utilities & Internet', datetime.now().strftime('%Y-%m-16'), 'usr_5', 'Sophia Chen', 'Operations', '#f59e0b')
+        ('tx_b_1', 'Client Retainer — Enterprise Cloud Migration', 185000.0, 'income', 'Client Invoices & Retainers', datetime.now().strftime('%Y-%m-02'), 'usr_2', 'Alex Rivera', 'alex@apex.com', 'Sales', '#3b82f6'),
+        ('tx_b_2', 'Monthly Office Lease & Co-working Space', 45000.0, 'expense', 'Office Rent & Facilities', datetime.now().strftime('%Y-%m-03'), 'usr_5', 'Sophia Chen', 'sophia@apex.com', 'Operations', '#f59e0b'),
+        ('tx_b_3', 'Core Engineering & Design Team Payroll', 95000.0, 'expense', 'Salaries & Payroll', datetime.now().strftime('%Y-%m-05'), 'usr_1', 'Elena Rostova', 'admin@apex.com', 'Management', '#8b5cf6'),
+        ('tx_b_4', 'SaaS Consulting & Custom API Integration', 68000.0, 'income', 'Consulting & Services', datetime.now().strftime('%Y-%m-07'), 'usr_3', 'Priya Sharma', 'priya@apex.com', 'Engineering', '#10b981'),
+        ('tx_b_5', 'AWS Cloud Infrastructure & Server Hosting', 12400.0, 'expense', 'Cloud & Software Tools', datetime.now().strftime('%Y-%m-09'), 'usr_3', 'Priya Sharma', 'priya@apex.com', 'Engineering', '#10b981'),
+        ('tx_b_6', 'Digital Marketing Campaign & Google Ads', 16500.0, 'expense', 'Marketing & Advertising', datetime.now().strftime('%Y-%m-12'), 'usr_4', 'Marcus Vance', 'marcus@apex.com', 'Marketing', '#ec4899'),
+        ('tx_b_7', 'Quarterly High-Yield Corporate Deposit', 8500.0, 'income', 'Investments & Returns', datetime.now().strftime('%Y-%m-14'), 'usr_1', 'Elena Rostova', 'admin@apex.com', 'Management', '#8b5cf6'),
+        ('tx_b_8', 'Office Gigabit Internet & Power Utilities', 4800.0, 'expense', 'Utilities & Internet', datetime.now().strftime('%Y-%m-16'), 'usr_5', 'Sophia Chen', 'sophia@apex.com', 'Operations', '#f59e0b')
     ]
 
     cursor = conn.cursor()
     for tx in samples:
         cursor.execute('''
-            INSERT INTO transactions (id, description, amount, type, category, date, is_deleted, deleted_at, deleted_reason, user_id, user_name, department, avatar_color)
-            VALUES (?, ?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?, ?, ?)
+            INSERT INTO transactions (id, description, amount, type, category, date, is_deleted, deleted_at, deleted_reason, user_id, user_name, user_email, department, avatar_color)
+            VALUES (?, ?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 description = excluded.description,
                 amount = excluded.amount,
@@ -189,6 +196,7 @@ def seed_business_sample_data(conn):
                 deleted_reason = NULL,
                 user_id = excluded.user_id,
                 user_name = excluded.user_name,
+                user_email = excluded.user_email,
                 department = excluded.department,
                 avatar_color = excluded.avatar_color
         ''', tx)
@@ -199,8 +207,8 @@ def seed_business_sample_data(conn):
             'category': tx[4],
             'date': tx[5],
             'user': tx[7],
-            'department': tx[8],
-            'note': 'Enterprise Multi-User Sample'
+            'email': tx[8],
+            'department': tx[9]
         }, user_name=tx[7])
     conn.commit()
 
@@ -217,7 +225,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(response_bytes)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-User-Name')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-User-Name, X-User-Id, X-User-Role')
         self.send_header('Connection', 'close')
         self.end_headers()
         self.wfile.write(response_bytes)
@@ -227,7 +235,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-User-Name')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-User-Name, X-User-Id, X-User-Role')
         self.send_header('Connection', 'close')
         self.end_headers()
 
@@ -237,7 +245,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
             path = parsed.path
             query = parse_qs(parsed.query)
 
-            # 1. Health Status
+            # Health Check
             if path == '/api/health':
                 self.send_json_response(200, {
                     'status': 'online',
@@ -246,7 +254,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 })
                 return
 
-            # 2. Get System Security Policy (Immutable Policy status)
+            # Security Policy
             elif path == '/api/admin/policy':
                 conn = get_db()
                 try:
@@ -260,12 +268,12 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                     'status': 'success',
                     'data': {
                         'immutable_policy_enabled': enabled,
-                        'description': 'When enabled, transactions are archived with soft-deletes only. When disabled, administrators may permanently purge records.'
+                        'description': 'When enabled, soft-deletes are strictly enforced.'
                     }
                 })
                 return
 
-            # 3. Get Multi-User Team Roster
+            # Users Roster (Pass sanitized without password_hash)
             elif path == '/api/users':
                 conn = get_db()
                 try:
@@ -277,7 +285,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(200, {'status': 'success', 'data': users})
                 return
 
-            # 4. Get Active Transactions
+            # Active Transactions (Supports ?user_id= & ?department=)
             elif path == '/api/transactions':
                 user_filter = query.get('user_id', [''])[0]
                 dept_filter = query.get('department', [''])[0]
@@ -287,7 +295,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                     cursor = conn.cursor()
                     sql = '''
                         SELECT id, description, amount, type, category, date, created_at,
-                               user_id, user_name, department, avatar_color
+                               user_id, user_name, user_email, department, avatar_color
                         FROM transactions
                         WHERE is_deleted = 0
                     '''
@@ -307,7 +315,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(200, {'status': 'success', 'data': rows})
                 return
 
-            # 5. Get Business Profile
+            # Business Profile
             elif path == '/api/business-profile':
                 conn = get_db()
                 try:
@@ -319,7 +327,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(200, {'status': 'success', 'data': profile})
                 return
 
-            # 6. Admin API: Full Audit Log Ledger
+            # Admin Audit Logs
             elif path == '/api/admin/audit-logs':
                 conn = get_db()
                 try:
@@ -343,14 +351,14 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(200, {'status': 'success', 'data': rows})
                 return
 
-            # 7. Admin API: Get All Deleted / Archived Transactions (Immutable Trash)
+            # Archived / Soft-Deleted Transactions
             elif path == '/api/admin/deleted':
                 conn = get_db()
                 try:
                     cursor = conn.cursor()
                     cursor.execute('''
                         SELECT id, description, amount, type, category, date, deleted_at, deleted_reason,
-                               user_id, user_name, department, avatar_color
+                               user_id, user_name, user_email, department, avatar_color
                         FROM transactions
                         WHERE is_deleted = 1
                         ORDER BY deleted_at DESC
@@ -361,10 +369,11 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(200, {'status': 'success', 'data': rows})
                 return
 
-            # 8. Admin API: Generate Financial Statement / P&L
+            # Financial Statement (P&L)
             elif path == '/api/admin/statement':
                 start_date = query.get('start_date', [''])[0]
                 end_date = query.get('end_date', [''])[0]
+                user_id = query.get('user_id', [''])[0]
 
                 conn = get_db()
                 try:
@@ -378,18 +387,19 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                     if end_date:
                         sql += " AND date <= ?"
                         params.append(end_date)
+                    if user_id:
+                        sql += " AND user_id = ?"
+                        params.append(user_id)
 
                     sql += " ORDER BY date ASC"
                     cursor.execute(sql, params)
                     txs = [dict(r) for r in cursor.fetchall()]
 
-                    # Compute Statement Metrics
                     total_revenue = sum(t['amount'] for t in txs if t['type'] == 'income')
                     total_expense = sum(t['amount'] for t in txs if t['type'] == 'expense')
                     net_profit = total_revenue - total_expense
                     profit_margin = round((net_profit / total_revenue * 100), 2) if total_revenue > 0 else 0.0
 
-                    # Group by Category & Department
                     revenue_by_cat = {}
                     expense_by_cat = {}
                     dept_spend = {}
@@ -429,11 +439,10 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                     'department_spending': dept_spend,
                     'transactions': txs
                 }
-
                 self.send_json_response(200, {'status': 'success', 'data': statement_data})
                 return
 
-            # 9. Admin API: Team Spending & User Analytics
+            # Team Spending Analytics
             elif path == '/api/admin/team-analytics':
                 conn = get_db()
                 try:
@@ -473,7 +482,6 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 })
                 return
 
-            # Serve static assets
             self.serve_static_file(path)
         except Exception as e:
             self.send_json_response(500, {'status': 'error', 'message': str(e)})
@@ -488,14 +496,99 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
             if length > 0:
                 try:
                     body = json.loads(self.rfile.read(length).decode('utf-8'))
-                except Exception as e:
+                except Exception:
                     self.send_json_response(400, {'status': 'error', 'message': 'Invalid JSON format.'})
                     return
 
-            operator_user = self.headers.get('X-User-Name') or body.get('operator_user') or 'Executive Admin'
+            operator_user = self.headers.get('X-User-Name') or body.get('operator_user') or 'Staff'
 
-            # 1. Create / Update Transaction
-            if path == '/api/transactions':
+            # 1. User Authentication: Login
+            if path == '/api/auth/login':
+                email = body.get('email', '').strip().lower()
+                password = body.get('password', '')
+
+                if not email or not password:
+                    self.send_json_response(400, {'status': 'error', 'message': 'Email and password are required.'})
+                    return
+
+                pwd_hash = hash_password(password)
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT id, name, email, role, department, avatar_color, password_hash FROM users WHERE LOWER(email) = ?", (email,))
+                    user = cursor.fetchone()
+
+                    if not user or user['password_hash'] != pwd_hash:
+                        self.send_json_response(401, {'status': 'error', 'message': 'Invalid email or password.'})
+                        return
+
+                    user_dict = {
+                        'id': user['id'],
+                        'name': user['name'],
+                        'email': user['email'],
+                        'role': user['role'],
+                        'department': user['department'],
+                        'avatar_color': user['avatar_color'],
+                        'token': f"sess_{user['id']}_{int(datetime.now().timestamp())}"
+                    }
+                    log_audit(conn, 'USER_LOGIN', user['id'], {'email': email}, user_name=user['name'])
+                finally:
+                    conn.close()
+
+                self.send_json_response(200, {'status': 'success', 'message': 'Login successful', 'data': user_dict})
+                return
+
+            # 2. User Authentication: Register
+            elif path == '/api/auth/register':
+                name = body.get('name', '').strip()
+                email = body.get('email', '').strip().lower()
+                password = body.get('password', '')
+                dept = body.get('department', 'General').strip()
+                role = body.get('role', 'user').strip()
+                color = body.get('avatar_color', '#6366f1')
+
+                if not name or not email or not password:
+                    self.send_json_response(400, {'status': 'error', 'message': 'Name, email, and password are required.'})
+                    return
+
+                if len(password) < 6:
+                    self.send_json_response(400, {'status': 'error', 'message': 'Password must be at least 6 characters.'})
+                    return
+
+                u_id = f"usr_{int(datetime.now().timestamp()*1000)}"
+                pwd_hash = hash_password(password)
+
+                conn = get_db()
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT id FROM users WHERE LOWER(email) = ?", (email,))
+                    if cursor.fetchone():
+                        self.send_json_response(400, {'status': 'error', 'message': 'An account with this email already exists.'})
+                        return
+
+                    cursor.execute('''
+                        INSERT INTO users (id, name, email, password_hash, role, department, avatar_color, is_active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                    ''', (u_id, name, email, pwd_hash, role, dept, color))
+
+                    user_dict = {
+                        'id': u_id,
+                        'name': name,
+                        'email': email,
+                        'role': role,
+                        'department': dept,
+                        'avatar_color': color,
+                        'token': f"sess_{u_id}_{int(datetime.now().timestamp())}"
+                    }
+                    log_audit(conn, 'USER_REGISTER', u_id, {'name': name, 'email': email, 'role': role, 'dept': dept}, user_name=name)
+                finally:
+                    conn.close()
+
+                self.send_json_response(201, {'status': 'success', 'message': 'Account registered successfully', 'data': user_dict})
+                return
+
+            # 3. Create / Record Transaction
+            elif path == '/api/transactions':
                 desc = body.get('description', '').strip()
                 amount = body.get('amount')
                 tx_type = body.get('type')
@@ -505,11 +598,12 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 
                 user_id = body.get('user_id', 'usr_1')
                 user_name = body.get('user_name', 'Elena Rostova')
+                user_email = body.get('user_email', 'admin@apex.com')
                 department = body.get('department', 'Management')
                 avatar_color = body.get('avatar_color', '#8b5cf6')
 
                 if not desc or amount is None or not tx_type or not category or not date_str:
-                    self.send_json_response(400, {'status': 'error', 'message': 'Missing required fields (description, amount, type, category, date).'})
+                    self.send_json_response(400, {'status': 'error', 'message': 'Missing required fields.'})
                     return
 
                 conn = get_db()
@@ -518,9 +612,9 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                     cursor.execute('''
                         INSERT INTO transactions (
                             id, description, amount, type, category, date, is_deleted,
-                            user_id, user_name, department, avatar_color
+                            user_id, user_name, user_email, department, avatar_color
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
                         ON CONFLICT(id) DO UPDATE SET
                             description = excluded.description,
                             amount = excluded.amount,
@@ -532,9 +626,10 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                             deleted_reason = NULL,
                             user_id = excluded.user_id,
                             user_name = excluded.user_name,
+                            user_email = excluded.user_email,
                             department = excluded.department,
                             avatar_color = excluded.avatar_color
-                    ''', (tx_id, desc, float(amount), tx_type, category, date_str, user_id, user_name, department, avatar_color))
+                    ''', (tx_id, desc, float(amount), tx_type, category, date_str, user_id, user_name, user_email, department, avatar_color))
 
                     log_audit(conn, 'CREATE', tx_id, {
                         'description': desc,
@@ -551,7 +646,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(201, {'status': 'success', 'message': 'Transaction recorded successfully', 'id': tx_id})
                 return
 
-            # 2. Toggle Immutable Policy (Admin Switch)
+            # 4. Toggle Immutable Policy
             elif path == '/api/admin/policy/toggle':
                 conn = get_db()
                 try:
@@ -566,8 +661,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                     log_audit(conn, 'POLICY_TOGGLE', None, {
                         'policy': 'immutable_policy_enabled',
                         'previous': current,
-                        'new_state': new_bool,
-                        'note': 'Immutable Audit Policy toggled by Admin'
+                        'new_state': new_bool
                     }, user_name=operator_user)
                 finally:
                     conn.close()
@@ -581,40 +675,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 })
                 return
 
-            # 3. Add or Update Team Member
-            elif path == '/api/users':
-                u_id = body.get('id') or f"usr_{int(datetime.now().timestamp()*1000)}"
-                name = body.get('name', '').strip()
-                email = body.get('email', '').strip()
-                role = body.get('role', 'Team Member').strip()
-                dept = body.get('department', 'General').strip()
-                color = body.get('avatar_color', '#6366f1')
-
-                if not name:
-                    self.send_json_response(400, {'status': 'error', 'message': 'User name is required.'})
-                    return
-
-                conn = get_db()
-                try:
-                    cursor = conn.cursor()
-                    cursor.execute('''
-                        INSERT INTO users (id, name, email, role, department, avatar_color, is_active)
-                        VALUES (?, ?, ?, ?, ?, ?, 1)
-                        ON CONFLICT(id) DO UPDATE SET
-                            name = excluded.name,
-                            email = excluded.email,
-                            role = excluded.role,
-                            department = excluded.department,
-                            avatar_color = excluded.avatar_color
-                    ''', (u_id, name, email, role, dept, color))
-                    log_audit(conn, 'USER_UPDATE', u_id, {'name': name, 'role': role, 'department': dept}, user_name=operator_user)
-                finally:
-                    conn.close()
-
-                self.send_json_response(200, {'status': 'success', 'message': f'User {name} saved.', 'id': u_id})
-                return
-
-            # 4. Restore Deleted Transaction (Soft-delete reversal)
+            # 5. Restore Deleted Transaction
             elif path.startswith('/api/admin/restore/'):
                 tx_id = path.replace('/api/admin/restore/', '').strip()
                 conn = get_db()
@@ -631,51 +692,38 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                     log_audit(conn, 'RESTORE', tx_id, {
                         'description': target['description'],
                         'amount': target['amount'],
-                        'type': target['type'],
-                        'category': target['category']
+                        'type': target['type']
                     }, user_name=operator_user)
                 finally:
                     conn.close()
 
-                self.send_json_response(200, {'status': 'success', 'message': f'Restored "{target["description"]}" back to active ledger.'})
+                self.send_json_response(200, {'status': 'success', 'message': f'Restored "{target["description"]}"'})
                 return
 
-            # 5. Permanent Purge All Deleted Records (Permitted ONLY when Immutable Policy is OFF)
+            # 6. Purge All Deleted Records
             elif path == '/api/admin/purge-all':
                 conn = get_db()
                 try:
                     cursor = conn.cursor()
-                    # Check policy
                     cursor.execute("SELECT value FROM system_settings WHERE key = 'immutable_policy_enabled'")
                     row = cursor.fetchone()
                     immutable = (row['value'] == '1' or row['value'].lower() == 'true') if row else True
 
                     if immutable:
-                        self.send_json_response(403, {
-                            'status': 'error',
-                            'message': 'Immutable Audit Policy is ACTIVE. Permanent purge is prohibited by security policy. Disable the Immutable Policy first in Admin Security Settings.'
-                        })
+                        self.send_json_response(403, {'status': 'error', 'message': 'Immutable Audit Policy is ACTIVE. Permanent purge prohibited.'})
                         return
 
                     cursor.execute("SELECT COUNT(*) as count FROM transactions WHERE is_deleted = 1")
                     del_count = cursor.fetchone()['count']
-
                     cursor.execute("DELETE FROM transactions WHERE is_deleted = 1")
-                    log_audit(conn, 'PERMANENT_PURGE_ALL', None, {
-                        'purged_count': del_count,
-                        'timestamp': datetime.now().isoformat(),
-                        'executed_by': operator_user
-                    }, user_name=operator_user)
+                    log_audit(conn, 'PERMANENT_PURGE_ALL', None, {'purged_count': del_count}, user_name=operator_user)
                 finally:
                     conn.close()
 
-                self.send_json_response(200, {
-                    'status': 'success',
-                    'message': f'Permanently purged {del_count} archived records from SQLite database.'
-                })
+                self.send_json_response(200, {'status': 'success', 'message': f'Permanently purged {del_count} archived records.'})
                 return
 
-            # 6. Update Business Profile
+            # 7. Update Business Profile
             elif path == '/api/business-profile':
                 company_name = body.get('company_name', 'Apex Business Solutions Pvt. Ltd.')
                 tax_id = body.get('tax_id', '')
@@ -684,13 +732,13 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 try:
                     cursor = conn.cursor()
                     cursor.execute('UPDATE business_profile SET company_name = ?, tax_id = ?, financial_year = ? WHERE id = 1', (company_name, tax_id, financial_year))
-                    log_audit(conn, 'PROFILE_UPDATE', None, {'company_name': company_name, 'tax_id': tax_id, 'financial_year': financial_year}, user_name=operator_user)
+                    log_audit(conn, 'PROFILE_UPDATE', None, {'company_name': company_name, 'tax_id': tax_id}, user_name=operator_user)
                 finally:
                     conn.close()
                 self.send_json_response(200, {'status': 'success', 'message': 'Business profile updated.'})
                 return
 
-            # 7. Reset All Active Transactions (Soft-archive to trash)
+            # 8. Reset / Sample Data
             elif path == '/api/reset':
                 conn = get_db()
                 try:
@@ -702,7 +750,6 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(200, {'status': 'success', 'message': 'All active transactions archived.'})
                 return
 
-            # 8. Reload Sample Data
             elif path == '/api/sample-data':
                 conn = get_db()
                 try:
@@ -720,24 +767,19 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
         try:
             parsed = urlparse(self.path)
             path = parsed.path
-            operator_user = self.headers.get('X-User-Name') or 'Executive Admin'
+            operator_user = self.headers.get('X-User-Name') or 'Staff'
 
-            # 1. Permanent Purge Single Transaction (Permitted ONLY when Immutable Policy is OFF)
             if path.startswith('/api/admin/purge/'):
                 tx_id = path.replace('/api/admin/purge/', '').strip()
                 conn = get_db()
                 try:
                     cursor = conn.cursor()
-                    # Check policy
                     cursor.execute("SELECT value FROM system_settings WHERE key = 'immutable_policy_enabled'")
                     row = cursor.fetchone()
                     immutable = (row['value'] == '1' or row['value'].lower() == 'true') if row else True
 
                     if immutable:
-                        self.send_json_response(403, {
-                            'status': 'error',
-                            'message': 'Immutable Audit Policy is ACTIVE. Permanent deletion is prohibited. To permanently remove records, disable the Immutable Policy in the Admin Security Settings.'
-                        })
+                        self.send_json_response(403, {'status': 'error', 'message': 'Immutable Audit Policy is ACTIVE. Permanent deletion prohibited.'})
                         return
 
                     cursor.execute('SELECT * FROM transactions WHERE id = ?', (tx_id,))
@@ -747,19 +789,13 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                         return
 
                     cursor.execute('DELETE FROM transactions WHERE id = ?', (tx_id,))
-                    log_audit(conn, 'PERMANENT_PURGE', tx_id, {
-                        'description': target['description'],
-                        'amount': target['amount'],
-                        'type': target['type'],
-                        'purged_by': operator_user
-                    }, user_name=operator_user)
+                    log_audit(conn, 'PERMANENT_PURGE', tx_id, {'description': target['description']}, user_name=operator_user)
                 finally:
                     conn.close()
 
-                self.send_json_response(200, {'status': 'success', 'message': f'Permanently purged "{target["description"]}" from database.'})
+                self.send_json_response(200, {'status': 'success', 'message': f'Permanently purged "{target["description"]}".'})
                 return
 
-            # 2. Standard Soft Delete (Archive)
             elif path.startswith('/api/transactions/'):
                 tx_id = path.replace('/api/transactions/', '').strip()
                 conn = get_db()
@@ -782,10 +818,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
                         'description': target['description'],
                         'amount': target['amount'],
                         'type': target['type'],
-                        'category': target['category'],
-                        'date': target['date'],
-                        'deleted_by': operator_user,
-                        'deleted_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        'deleted_by': operator_user
                     }, user_name=operator_user)
                 finally:
                     conn.close()
@@ -804,7 +837,6 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
         safe_path = os.path.normpath(path.lstrip('/\\'))
         full_path = os.path.abspath(os.path.join(BASE_DIR, safe_path))
 
-        # Prevent path traversal
         try:
             if os.path.commonpath([BASE_DIR, full_path]) != BASE_DIR:
                 self.send_response(403)
@@ -846,7 +878,7 @@ class BusinessTrackerHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.flush()
 
     def log_message(self, format, *args):
-        pass # Clean console
+        pass
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
@@ -862,16 +894,14 @@ def run_server():
 
     init_db()
     print("=" * 70)
-    print(" [APEX FINANCE] Enterprise Multi-User Platform & Policy Engine")
+    print(" [APEX FINANCE] Enterprise Multi-User Platform with Password Auth")
     print("=" * 70)
+    print(f" * Portal Login    : http://localhost:{PORT}/login.html")
     print(f" * Staff Hub       : http://localhost:{PORT}")
     print(f" * Admin Portal    : http://localhost:{PORT}/admin.html")
     print(f" * Transactions    : http://localhost:{PORT}/transactions.html")
     print(f" * Analytics       : http://localhost:{PORT}/analytics.html")
     print(f" * Statements      : http://localhost:{PORT}/statements.html")
-    print(f" * Audit Ledger    : http://localhost:{PORT}/audit-logs.html")
-    print(f" * Archived Trash  : http://localhost:{PORT}/trash.html")
-    print(f" * Settings        : http://localhost:{PORT}/settings.html")
     print(f" * Database File   : {DB_FILE}")
     print("=" * 70)
 

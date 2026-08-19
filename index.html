@@ -67,8 +67,8 @@
         <span>Settings</span>
       </a>
 
-      <span class="nav-section-title">Administration</span>
-      <a href="admin.html" class="nav-link admin-bridge-link">
+      <span class="nav-section-title" id="adminNavSectionTitle">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link" id="adminNavLink">
         <i class="fa-solid fa-shield-halved"></i>
         <span>Admin Command Hub</span>
       </a>
@@ -78,8 +78,8 @@
       <div class="sidebar-user">
         <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Elena Rostova</span>
-          <span class="user-role">Finance Director • Management</span>
+          <span class="user-name">Loading...</span>
+          <span class="user-role">...</span>
         </div>
       </div>
     </div>
@@ -95,13 +95,13 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <div class="page-heading">
-          <h1 class="page-title">Executive Dashboard</h1>
-          <span class="page-breadcrumb">Apex Business Finance / Multi-User Financial Center</span>
+          <h1 class="page-title" id="dashboardMainTitle">Financial Dashboard</h1>
+          <span class="page-breadcrumb" id="dashboardBreadcrumb">Workspace Overview</span>
         </div>
       </div>
 
       <div class="topbar-actions">
-        <a href="admin.html" class="admin-hub-link" title="Open Dedicated Executive Admin Portal">
+        <a href="admin.html" class="admin-hub-link" id="topbarAdminLink" title="Open Admin Command Center">
           <i class="fa-solid fa-shield-halved"></i>
           <span>Admin Portal</span>
         </a>
@@ -121,6 +121,20 @@
     <!-- Content Body -->
     <div class="app-content-body">
       
+      <!-- Admin User-Tracking Inspection Alert (Displayed when an admin is inspecting a specific user) -->
+      <div id="adminInspectionBanner" style="display: none; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: var(--radius-lg); padding: 0.85rem 1.25rem; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <i class="fa-solid fa-user-gear" style="color: var(--purple); font-size: 1.2rem;"></i>
+          <div>
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);" id="inspectionBannerText">Viewing Individual Financial Records</span>
+            <span style="font-size: 0.75rem; color: var(--text-muted); display: block;" id="inspectionBannerSub">Showing data filtered exclusively for this employee.</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="resetAdminFilter()">
+          <i class="fa-solid fa-globe"></i> View All Team Data
+        </button>
+      </div>
+
       <!-- Executive KPI Cards -->
       <section class="kpi-grid" aria-label="Key Performance Indicators">
         <div class="kpi-card revenue">
@@ -129,7 +143,7 @@
             <div class="kpi-icon-bubble income"><i class="fa-solid fa-arrow-trend-up"></i></div>
           </div>
           <div class="kpi-value" id="kpiRevenue">₹0.00</div>
-          <div class="kpi-footer" id="kpiIncomeCount">0 revenue transactions</div>
+          <div class="kpi-footer" id="kpiIncomeCount">0 transactions</div>
         </div>
 
         <div class="kpi-card expense">
@@ -138,25 +152,25 @@
             <div class="kpi-icon-bubble expense"><i class="fa-solid fa-arrow-trend-down"></i></div>
           </div>
           <div class="kpi-value" id="kpiExpense">₹0.00</div>
-          <div class="kpi-footer" id="kpiExpenseCount">0 expense entries</div>
+          <div class="kpi-footer" id="kpiExpenseCount">0 cost entries</div>
         </div>
 
         <div class="kpi-card profit">
           <div class="kpi-header">
-            <span class="kpi-label">Net Operating Profit</span>
+            <span class="kpi-label">Net Balance / Profit</span>
             <div class="kpi-icon-bubble profit"><i class="fa-solid fa-chart-line"></i></div>
           </div>
           <div class="kpi-value" id="kpiNetProfit">₹0.00</div>
-          <div class="kpi-footer" id="kpiMargin">Margin: 0%</div>
+          <div class="kpi-footer" id="kpiMargin">Operating Margin: 0%</div>
         </div>
 
         <div class="kpi-card policy">
           <div class="kpi-header">
-            <span class="kpi-label">Active Team Member</span>
-            <div class="kpi-icon-bubble policy"><i class="fa-solid fa-users"></i></div>
+            <span class="kpi-label">Active Workspace</span>
+            <div class="kpi-icon-bubble policy"><i class="fa-solid fa-user-check"></i></div>
           </div>
-          <div class="kpi-value" id="kpiActiveUserName" style="font-size: 1.35rem;">Elena Rostova</div>
-          <div class="kpi-footer" id="kpiActiveUserDept">Department: Management</div>
+          <div class="kpi-value" id="kpiActiveUserName" style="font-size: 1.25rem;">...</div>
+          <div class="kpi-footer" id="kpiActiveUserDept">...</div>
         </div>
       </section>
 
@@ -168,7 +182,7 @@
           <div class="content-card-header">
             <div class="card-title-group">
               <h3 class="card-title">Cash Flow &amp; Monthly Trajectory</h3>
-              <p class="card-subtitle">Revenue vs Operating Expense comparison</p>
+              <p class="card-subtitle">Revenue vs Expenditure comparison</p>
             </div>
           </div>
           <div class="content-card-body" style="height: 320px; position: relative;">
@@ -180,8 +194,8 @@
         <div class="content-card">
           <div class="content-card-header">
             <div class="card-title-group">
-              <h3 class="card-title">Cost Distribution</h3>
-              <p class="card-subtitle">Spending by category share</p>
+              <h3 class="card-title">Category Cost Distribution</h3>
+              <p class="card-subtitle">Spending breakdown by category</p>
             </div>
           </div>
           <div class="content-card-body" style="height: 320px; position: relative;">
@@ -191,19 +205,19 @@
 
       </div>
 
-      <!-- Recent Transactions Ledger with Multi-User Attributions -->
+      <!-- Recent Transactions Ledger -->
       <div class="content-card">
         <div class="content-card-header">
           <div class="card-title-group">
-            <h3 class="card-title">Recent Transactions &amp; Team Submissions</h3>
-            <p class="card-subtitle">Latest corporate revenue and expenditure records</p>
+            <h3 class="card-title">Recent Transactions</h3>
+            <p class="card-subtitle" id="recentLedgerSubtitle">Recent financial submissions and receipts</p>
           </div>
           <div style="display: flex; gap: 0.75rem;">
             <a href="transactions.html" class="btn btn-outline btn-sm">
               <i class="fa-solid fa-list-ul"></i> View All
             </a>
             <button class="btn btn-primary btn-sm" id="openNewTxModalBtn">
-              <i class="fa-solid fa-plus"></i> Record Expense
+              <i class="fa-solid fa-plus"></i> Record Transaction
             </button>
           </div>
         </div>
@@ -223,8 +237,8 @@
               </thead>
               <tbody id="recentTransactionsTableBody">
                 <tr>
-                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Loading recent transactions...
+                  <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading recent records...
                   </td>
                 </tr>
               </tbody>
@@ -255,7 +269,7 @@
 
           <div class="form-group">
             <label class="form-label" for="txDescription">Description / Vendor:</label>
-            <input type="text" id="txDescription" class="form-input" placeholder="e.g. AWS Cloud Infrastructure Billing" required />
+            <input type="text" id="txDescription" class="form-input" placeholder="e.g. AWS Server Infrastructure Hosting" required />
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -274,11 +288,6 @@
             <label class="form-label" for="txCategory">Category:</label>
             <select id="txCategory" class="form-select" required></select>
           </div>
-
-          <div class="form-group">
-            <label class="form-label" for="txSubmitter">Submitting Team Member:</label>
-            <select id="txSubmitter" class="form-select"></select>
-          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancelTxBtn">Cancel</button>
@@ -288,109 +297,72 @@
     </div>
   </div>
 
-  <!-- Shared JS & Dashboard Controller -->
+  <!-- Shared Engine & Dashboard Controller -->
   <script src="shared.js"></script>
   <script>
     let trendChartInstance = null;
     let doughnutChartInstance = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
-      setupCategoryOptions();
-      setupSubmitterOptions();
-      setupDashboardModals();
-      await loadDashboardData();
-    });
+      const curUser = AuthManager.getCurrentUser();
+      if (!curUser) return;
 
-    function onActiveUserChanged(user) {
-      document.getElementById('kpiActiveUserName').textContent = user.name;
-      document.getElementById('kpiActiveUserDept').textContent = `Department: ${user.department}`;
-      setupSubmitterOptions();
-    }
-
-    function setupSubmitterOptions() {
-      const select = document.getElementById('txSubmitter');
-      if (!select) return;
-      const active = getActiveUser();
-      select.innerHTML = currentTeamUsers.map(u => `
-        <option value="${u.id}" ${u.id === active.id ? 'selected' : ''}>
-          ${escapeHtml(u.name)} (${escapeHtml(u.department)} • ${escapeHtml(u.role)})
-        </option>
-      `).join('');
-    }
-
-    function setupCategoryOptions() {
-      const typeSelect = document.getElementById('txType');
-      const catSelect = document.getElementById('txCategory');
-
-      function populate() {
-        const type = typeSelect.value;
-        const list = BUSINESS_CATEGORIES[type] || [];
-        catSelect.innerHTML = list.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+      // Adjust Admin-only UI elements
+      if (curUser.role !== 'admin') {
+        const adminLink = document.getElementById('topbarAdminLink');
+        if (adminLink) adminLink.style.display = 'none';
+        const sideAdminLink = document.getElementById('adminNavLink');
+        if (sideAdminLink) sideAdminLink.style.display = 'none';
+        const sideAdminTitle = document.getElementById('adminNavSectionTitle');
+        if (sideAdminTitle) sideAdminTitle.style.display = 'none';
       }
 
-      typeSelect.addEventListener('change', populate);
-      populate();
+      document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+      setupCategoryOptions();
+      setupDashboardModals();
+      await refreshCurrentPageData();
+    });
+
+    function resetAdminFilter() {
+      setSelectedUserFilter('all');
+      const select = document.getElementById('adminUserFilterSelect');
+      if (select) select.value = 'all';
+      refreshCurrentPageData();
     }
 
-    function setupDashboardModals() {
-      const modal = document.getElementById('txModal');
-      document.getElementById('openNewTxModalBtn')?.addEventListener('click', () => {
-        setupSubmitterOptions();
-        modal.classList.add('active');
-      });
-      document.getElementById('closeTxModalBtn')?.addEventListener('click', () => modal.classList.remove('active'));
-      document.getElementById('cancelTxBtn')?.addEventListener('click', () => modal.classList.remove('active'));
+    async function refreshCurrentPageData() {
+      const curUser = AuthManager.getCurrentUser();
+      if (!curUser) return;
 
-      document.getElementById('addTxForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const desc = document.getElementById('txDescription').value.trim();
-        const amount = parseFloat(document.getElementById('txAmount').value);
-        const type = document.getElementById('txType').value;
-        const category = document.getElementById('txCategory').value;
-        const date = document.getElementById('txDate').value;
-        const submitterId = document.getElementById('txSubmitter').value;
+      const isAdmin = curUser.role === 'admin';
+      const selectedFilter = getSelectedUserFilter();
 
-        const assignedUser = currentTeamUsers.find(u => u.id === submitterId) || getActiveUser();
-
-        const newTx = {
-          description: desc,
-          amount: amount,
-          type: type,
-          category: category,
-          date: date,
-          user_id: assignedUser.id,
-          user_name: assignedUser.name,
-          department: assignedUser.department,
-          avatar_color: assignedUser.avatar_color
-        };
-
-        const success = await saveTransactionRecord(newTx);
-        if (success) {
-          showToast(`Transaction added under ${assignedUser.name}`, 'success');
-          modal.classList.remove('active');
-          document.getElementById('addTxForm').reset();
-          document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
-          await loadDashboardData();
-        } else {
-          showToast('Failed to record transaction', 'error');
+      // Handle inspection banner
+      const banner = document.getElementById('adminInspectionBanner');
+      if (isAdmin && selectedFilter !== 'all') {
+        const users = AuthManager.getAllUsers();
+        const target = users.find(u => u.id === selectedFilter);
+        if (target) {
+          banner.style.display = 'flex';
+          document.getElementById('inspectionBannerText').textContent = `Inspecting Employee Data: ${target.name} (${target.department})`;
+          document.getElementById('inspectionBannerSub').textContent = `Email: ${target.email} • Role: ${target.role.toUpperCase()}`;
+          document.getElementById('kpiActiveUserName').textContent = target.name;
+          document.getElementById('kpiActiveUserDept').textContent = `Department: ${target.department}`;
         }
-      });
-    }
+      } else {
+        banner.style.display = 'none';
+        document.getElementById('kpiActiveUserName').textContent = curUser.name;
+        document.getElementById('kpiActiveUserDept').textContent = `${curUser.role.toUpperCase()} • ${curUser.department}`;
+      }
 
-    async function loadDashboardData() {
       const txs = await fetchTransactions();
-      const active = getActiveUser();
-
-      document.getElementById('kpiActiveUserName').textContent = active.name;
-      document.getElementById('kpiActiveUserDept').textContent = `Department: ${active.department}`;
 
       let rev = 0;
       let exp = 0;
       let revCount = 0;
       let expCount = 0;
 
-      txs.forEach((t) => {
+      txs.forEach(t => {
         if (t.type === 'income') {
           rev += Number(t.amount);
           revCount++;
@@ -414,19 +386,76 @@
       renderCharts(txs);
     }
 
+    function setupCategoryOptions() {
+      const typeSelect = document.getElementById('txType');
+      const catSelect = document.getElementById('txCategory');
+
+      function populate() {
+        const type = typeSelect.value;
+        const list = BUSINESS_CATEGORIES[type] || [];
+        catSelect.innerHTML = list.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+      }
+
+      typeSelect.addEventListener('change', populate);
+      populate();
+    }
+
+    function setupDashboardModals() {
+      const modal = document.getElementById('txModal');
+      document.getElementById('openNewTxModalBtn')?.addEventListener('click', () => {
+        modal.classList.add('active');
+      });
+      document.getElementById('closeTxModalBtn')?.addEventListener('click', () => modal.classList.remove('active'));
+      document.getElementById('cancelTxBtn')?.addEventListener('click', () => modal.classList.remove('active'));
+
+      document.getElementById('addTxForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const desc = document.getElementById('txDescription').value.trim();
+        const amount = parseFloat(document.getElementById('txAmount').value);
+        const type = document.getElementById('txType').value;
+        const category = document.getElementById('txCategory').value;
+        const date = document.getElementById('txDate').value;
+        const curUser = AuthManager.getCurrentUser();
+
+        const newTx = {
+          description: desc,
+          amount: amount,
+          type: type,
+          category: category,
+          date: date,
+          user_id: curUser.id,
+          user_name: curUser.name,
+          user_email: curUser.email,
+          department: curUser.department,
+          avatar_color: curUser.avatar_color
+        };
+
+        const success = await saveTransactionRecord(newTx);
+        if (success) {
+          showToast(`Transaction saved to your ledger`, 'success');
+          modal.classList.remove('active');
+          document.getElementById('addTxForm').reset();
+          document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+          await refreshCurrentPageData();
+        } else {
+          showToast('Failed to record transaction', 'error');
+        }
+      });
+    }
+
     function renderRecentTable(txs) {
       const tbody = document.getElementById('recentTransactionsTableBody');
       if (!tbody) return;
 
       if (txs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">No transactions recorded yet. Click "Record Expense" to begin.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">No records found. Click "Record Transaction" to add an expense or income entry.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = txs.map(t => {
         const isIncome = t.type === 'income';
         const initials = getInitials(t.user_name || 'Staff');
-        const color = t.avatar_color || '#8b5cf6';
+        const color = t.avatar_color || '#6366f1';
 
         return `
           <tr>
@@ -436,7 +465,7 @@
             <td>
               <div class="user-tag">
                 <span class="user-mini-avatar" style="background-color: ${color};">${initials}</span>
-                <span>${escapeHtml(t.user_name || 'Elena Rostova')}</span>
+                <span>${escapeHtml(t.user_name || 'Staff')}</span>
               </div>
             </td>
             <td><span class="dept-pill">${escapeHtml(t.department || 'General')}</span></td>
@@ -462,7 +491,7 @@
       const success = await deleteTransactionRecord(id);
       if (success) {
         showToast('Transaction archived to Trash', 'info');
-        await loadDashboardData();
+        await refreshCurrentPageData();
       }
     }
 
@@ -474,7 +503,7 @@
       // 1. Monthly Trajectory
       const monthlyData = {};
       txs.forEach(t => {
-        const monthKey = t.date.substring(0, 7); // YYYY-MM
+        const monthKey = t.date.substring(0, 7);
         if (!monthlyData[monthKey]) monthlyData[monthKey] = { revenue: 0, expense: 0 };
         if (t.type === 'income') monthlyData[monthKey].revenue += Number(t.amount);
         else monthlyData[monthKey].expense += Number(t.amount);
@@ -496,7 +525,7 @@
         trendChartInstance = new Chart(trendCtx, {
           type: 'bar',
           data: {
-            labels: labels.length > 0 ? labels : ['Current Month'],
+            labels: labels.length > 0 ? labels : ['Current Period'],
             datasets: [
               {
                 label: 'Gross Revenue',
@@ -550,7 +579,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '72%',
+            cutout: '70%',
             plugins: {
               legend: { position: 'bottom', labels: { boxWidth: 12, color: textColor, font: { size: 11 } } }
             }

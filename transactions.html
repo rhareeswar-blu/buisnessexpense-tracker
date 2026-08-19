@@ -64,8 +64,8 @@
         <span>Settings</span>
       </a>
 
-      <span class="nav-section-title">Administration</span>
-      <a href="admin.html" class="nav-link admin-bridge-link">
+      <span class="nav-section-title" id="adminNavSectionTitle">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link" id="adminNavLink">
         <i class="fa-solid fa-shield-halved"></i>
         <span>Admin Command Hub</span>
       </a>
@@ -75,8 +75,8 @@
       <div class="sidebar-user">
         <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Elena Rostova</span>
-          <span class="user-role">Finance Director • Management</span>
+          <span class="user-name">Loading...</span>
+          <span class="user-role">...</span>
         </div>
       </div>
     </div>
@@ -93,20 +93,20 @@
         </button>
         <div class="page-heading">
           <h1 class="page-title">Transactions Ledger</h1>
-          <span class="page-breadcrumb">Apex Business Finance / Multi-Department Itemized Records</span>
+          <span class="page-breadcrumb" id="txPageBreadcrumb">Itemized Financial Records</span>
         </div>
       </div>
 
       <div class="topbar-actions">
         <button class="btn btn-primary btn-sm" id="openNewTxModalBtn">
-          <i class="fa-solid fa-plus"></i> Record Expense
+          <i class="fa-solid fa-plus"></i> Record Entry
         </button>
 
-        <button class="btn btn-secondary btn-sm" id="exportCsvBtn" title="Export Ledger to CSV">
+        <button class="btn btn-secondary btn-sm" id="exportCsvBtn" title="Export to CSV">
           <i class="fa-solid fa-file-csv"></i> Export CSV
         </button>
 
-        <a href="admin.html" class="admin-hub-link" title="Open Admin Portal">
+        <a href="admin.html" class="admin-hub-link" id="topbarAdminLink" title="Open Admin Portal">
           <i class="fa-solid fa-shield-halved"></i>
           <span>Admin Portal</span>
         </a>
@@ -135,7 +135,7 @@
             <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 240px;">
               <div style="position: relative; width: 100%;">
                 <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-                <input type="text" id="searchInput" class="form-input" placeholder="Search by description, vendor, or team member..." style="padding-left: 2.25rem;" />
+                <input type="text" id="searchInput" class="form-input" placeholder="Search by description, vendor, or category..." style="padding-left: 2.25rem;" />
               </div>
             </div>
 
@@ -176,8 +176,8 @@
       <div class="content-card">
         <div class="content-card-header">
           <div class="card-title-group">
-            <h3 class="card-title">Corporate Transactions</h3>
-            <p class="card-subtitle" id="ledgerCountSummary">Showing all transactions</p>
+            <h3 class="card-title" id="ledgerTitleText">Personal Transaction Ledger</h3>
+            <p class="card-subtitle" id="ledgerCountSummary">Showing recorded entries</p>
           </div>
         </div>
         <div class="content-card-body" style="padding: 0;">
@@ -228,7 +228,7 @@
 
           <div class="form-group">
             <label class="form-label" for="txDescription">Description / Vendor:</label>
-            <input type="text" id="txDescription" class="form-input" placeholder="e.g. Google Cloud Platform Hosting" required />
+            <input type="text" id="txDescription" class="form-input" placeholder="e.g. Google Cloud Hosting" required />
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -247,11 +247,6 @@
             <label class="form-label" for="txCategory">Category:</label>
             <select id="txCategory" class="form-select" required></select>
           </div>
-
-          <div class="form-group">
-            <label class="form-label" for="txSubmitter">Submitting Team Member:</label>
-            <select id="txSubmitter" class="form-select"></select>
-          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancelTxBtn">Cancel</button>
@@ -267,29 +262,25 @@
     let allTransactions = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
+      const curUser = AuthManager.getCurrentUser();
+      if (!curUser) return;
+
+      if (curUser.role !== 'admin') {
+        const adminLink = document.getElementById('topbarAdminLink');
+        if (adminLink) adminLink.style.display = 'none';
+        const sideAdminLink = document.getElementById('adminNavLink');
+        if (sideAdminLink) sideAdminLink.style.display = 'none';
+        const sideAdminTitle = document.getElementById('adminNavSectionTitle');
+        if (sideAdminTitle) sideAdminTitle.style.display = 'none';
+      }
+
       document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
       setupCategoryOptions();
       setupCategoryFilterOptions();
-      setupSubmitterOptions();
       setupFilterListeners();
       setupModal();
-      await loadTransactionsLedger();
+      await refreshCurrentPageData();
     });
-
-    function onActiveUserChanged() {
-      setupSubmitterOptions();
-    }
-
-    function setupSubmitterOptions() {
-      const select = document.getElementById('txSubmitter');
-      if (!select) return;
-      const active = getActiveUser();
-      select.innerHTML = currentTeamUsers.map(u => `
-        <option value="${u.id}" ${u.id === active.id ? 'selected' : ''}>
-          ${escapeHtml(u.name)} (${escapeHtml(u.department)} • ${escapeHtml(u.role)})
-        </option>
-      `).join('');
-    }
 
     function setupCategoryOptions() {
       const typeSelect = document.getElementById('txType');
@@ -328,7 +319,6 @@
     function setupModal() {
       const modal = document.getElementById('txModal');
       document.getElementById('openNewTxModalBtn')?.addEventListener('click', () => {
-        setupSubmitterOptions();
         modal.classList.add('active');
       });
       document.getElementById('closeTxModalBtn')?.addEventListener('click', () => modal.classList.remove('active'));
@@ -341,9 +331,7 @@
         const type = document.getElementById('txType').value;
         const category = document.getElementById('txCategory').value;
         const date = document.getElementById('txDate').value;
-        const submitterId = document.getElementById('txSubmitter').value;
-
-        const assignedUser = currentTeamUsers.find(u => u.id === submitterId) || getActiveUser();
+        const curUser = AuthManager.getCurrentUser();
 
         const newTx = {
           description: desc,
@@ -351,26 +339,27 @@
           type: type,
           category: category,
           date: date,
-          user_id: assignedUser.id,
-          user_name: assignedUser.name,
-          department: assignedUser.department,
-          avatar_color: assignedUser.avatar_color
+          user_id: curUser.id,
+          user_name: curUser.name,
+          user_email: curUser.email,
+          department: curUser.department,
+          avatar_color: curUser.avatar_color
         };
 
         const success = await saveTransactionRecord(newTx);
         if (success) {
-          showToast(`Transaction logged under ${assignedUser.name}`, 'success');
+          showToast(`Transaction recorded`, 'success');
           modal.classList.remove('active');
           document.getElementById('addTxForm').reset();
           document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
-          await loadTransactionsLedger();
+          await refreshCurrentPageData();
         } else {
           showToast('Failed to record transaction', 'error');
         }
       });
     }
 
-    async function loadTransactionsLedger() {
+    async function refreshCurrentPageData() {
       allTransactions = await fetchTransactions();
       applyFilters();
     }
@@ -396,7 +385,6 @@
         return matchesQuery && matchesType && matchesDept && matchesCategory;
       });
 
-      // Sort
       filtered.sort((a, b) => {
         if (sort === 'date-desc') return new Date(b.date) - new Date(a.date);
         if (sort === 'date-asc') return new Date(a.date) - new Date(b.date);
@@ -418,7 +406,7 @@
           <tr>
             <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted);">
               <i class="fa-solid fa-receipt" style="font-size: 2rem; margin-bottom: 0.75rem; display: block; opacity: 0.5;"></i>
-              No matching transactions found. Try adjusting your search filters.
+              No matching records found.
             </td>
           </tr>
         `;
@@ -428,7 +416,7 @@
       tbody.innerHTML = txs.map(t => {
         const isIncome = t.type === 'income';
         const initials = getInitials(t.user_name || 'Staff');
-        const color = t.avatar_color || '#8b5cf6';
+        const color = t.avatar_color || '#6366f1';
 
         return `
           <tr>
@@ -439,7 +427,7 @@
             <td>
               <div class="user-tag">
                 <span class="user-mini-avatar" style="background-color: ${color};">${initials}</span>
-                <span>${escapeHtml(t.user_name || 'Elena Rostova')}</span>
+                <span>${escapeHtml(t.user_name || 'Staff')}</span>
               </div>
             </td>
             <td><span class="dept-pill">${escapeHtml(t.department || 'General')}</span></td>
@@ -465,7 +453,7 @@
       const success = await deleteTransactionRecord(id);
       if (success) {
         showToast('Transaction archived to Trash', 'info');
-        await loadTransactionsLedger();
+        await refreshCurrentPageData();
       }
     }
 
@@ -492,7 +480,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Apex_Transactions_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `Transactions_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     }

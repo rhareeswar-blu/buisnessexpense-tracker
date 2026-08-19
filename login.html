@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Apex Business Finance — Secure Portal Authentication" />
+  <title>Sign In &mdash; Apex Business Finance</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="shared.css" />
+
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #090d16 70%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .brand-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.5rem;
+    }
+
+    .brand-logo-large {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #6366f1, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 1.6rem;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.825rem;
+      color: #94a3b8;
+    }
+
+    .auth-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      gap: 4px;
+    }
+
+    .auth-tab-btn {
+      padding: 0.6rem;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .auth-tab-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    }
+
+    .auth-form {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .auth-form.active {
+      display: flex;
+    }
+
+    .password-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .password-toggle-btn:hover {
+      color: #cbd5e1;
+    }
+
+    /* Demo Quick Logins Card */
+    .demo-accounts-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .demo-header {
+      font-size: 0.725rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .demo-btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .demo-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0.35rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.2rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .demo-chip:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .demo-chip-role {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #6366f1;
+      text-transform: uppercase;
+    }
+
+    .demo-chip-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .demo-chip-pwd {
+      font-size: 0.625rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    
+    <!-- Brand Hero -->
+    <div class="brand-hero">
+      <div class="brand-logo-large">
+        <i class="fa-solid fa-briefcase"></i>
+      </div>
+      <h1 class="brand-title">Apex Business Finance</h1>
+      <p class="brand-subtitle">Multi-User Financial Portal &amp; Corporate Ledger</p>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="auth-card">
+      
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tabLoginBtn" type="button">Sign In</button>
+        <button class="auth-tab-btn" id="tabRegisterBtn" type="button">Register New</button>
+      </div>
+
+      <!-- 1. Sign In Form -->
+      <form class="auth-form active" id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Corporate Email:</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="e.g. admin@apex.com" required autocomplete="email" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Password:</label>
+          <div class="password-input-wrap">
+            <input type="password" id="loginPassword" class="form-input" placeholder="Enter password" required autocomplete="current-password" />
+            <button type="button" class="password-toggle-btn" id="toggleLoginPwdBtn" aria-label="Toggle password visibility">
+              <i class="fa-solid fa-eye" id="toggleLoginEye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="submitLoginBtn" style="margin-top: 0.5rem; width: 100%;">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Workspace
+        </button>
+      </form>
+
+      <!-- 2. Sign Up Form -->
+      <form class="auth-form" id="registerForm">
+        <div class="form-group">
+          <label class="form-label" for="regName">Full Name:</label>
+          <input type="text" id="regName" class="form-input" placeholder="e.g. David Miller" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regEmail">Work Email:</label>
+          <input type="email" id="regEmail" class="form-input" placeholder="e.g. david@apex.com" required />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label" for="regDept">Department:</label>
+            <select id="regDept" class="form-select" required>
+              <option value="Engineering">Engineering</option>
+              <option value="Sales" selected>Sales</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Operations">Operations</option>
+              <option value="Management">Management</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regRole">Role Level:</label>
+            <select id="regRole" class="form-select" required>
+              <option value="user" selected>Staff Member</option>
+              <option value="admin">Finance Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPassword">Create Password (min. 6 chars):</label>
+          <div class="password-input-wrap">
+            <input type="password" id="regPassword" class="form-input" placeholder="Create password" required minlength="6" autocomplete="new-password" />
+            <button type="button" class="password-toggle-btn" id="toggleRegPwdBtn">
+              <i class="fa-solid fa-eye" id="toggleRegEye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regColor">Avatar Color:</label>
+          <input type="color" id="regColor" class="form-input" value="#3b82f6" style="height: 38px; padding: 2px;" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="submitRegBtn" style="margin-top: 0.5rem; width: 100%;">
+          <i class="fa-solid fa-user-plus"></i> Create My Account
+        </button>
+      </form>
+
+      <!-- Quick 1-Click Demo Accounts -->
+      <div class="demo-accounts-box">
+        <div class="demo-header">
+          <i class="fa-solid fa-bolt" style="color: #f59e0b;"></i>
+          <span>1-Click Demo Accounts</span>
+        </div>
+        <div class="demo-btn-grid">
+          <div class="demo-chip" onclick="quickLogin('admin@apex.com', 'admin123')">
+            <span class="demo-chip-role" style="color: #c084fc;">Admin</span>
+            <span class="demo-chip-name">Elena Rostova</span>
+            <span class="demo-chip-pwd">admin123</span>
+          </div>
+
+          <div class="demo-chip" onclick="quickLogin('alex@apex.com', 'user123')">
+            <span class="demo-chip-role" style="color: #60a5fa;">Sales Lead</span>
+            <span class="demo-chip-name">Alex Rivera</span>
+            <span class="demo-chip-pwd">user123</span>
+          </div>
+
+          <div class="demo-chip" onclick="quickLogin('priya@apex.com', 'user123')">
+            <span class="demo-chip-role" style="color: #34d399;">Engineer</span>
+            <span class="demo-chip-name">Priya Sharma</span>
+            <span class="demo-chip-pwd">user123</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Shared Engine -->
+  <script src="shared.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // If already logged in, redirect to index.html
+      const cur = AuthManager.getCurrentUser();
+      if (cur && cur.token) {
+        window.location.href = 'index.html';
+      }
+
+      setupTabs();
+      setupPasswordToggles();
+      setupAuthForms();
+    });
+
+    function setupTabs() {
+      const tabLogin = document.getElementById('tabLoginBtn');
+      const tabReg = document.getElementById('tabRegisterBtn');
+      const formLogin = document.getElementById('loginForm');
+      const formReg = document.getElementById('registerForm');
+
+      tabLogin.addEventListener('click', () => {
+        tabLogin.classList.add('active');
+        tabReg.classList.remove('active');
+        formLogin.classList.add('active');
+        formReg.classList.remove('active');
+      });
+
+      tabReg.addEventListener('click', () => {
+        tabReg.classList.add('active');
+        tabLogin.classList.remove('active');
+        formReg.classList.add('active');
+        formLogin.classList.remove('active');
+      });
+    }
+
+    function setupPasswordToggles() {
+      const toggleLogin = document.getElementById('toggleLoginPwdBtn');
+      const loginPwd = document.getElementById('loginPassword');
+      const loginEye = document.getElementById('toggleLoginEye');
+
+      toggleLogin.addEventListener('click', () => {
+        const isPwd = loginPwd.type === 'password';
+        loginPwd.type = isPwd ? 'text' : 'password';
+        loginEye.className = isPwd ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+      });
+
+      const toggleReg = document.getElementById('toggleRegPwdBtn');
+      const regPwd = document.getElementById('regPassword');
+      const regEye = document.getElementById('toggleRegEye');
+
+      toggleReg.addEventListener('click', () => {
+        const isPwd = regPwd.type === 'password';
+        regPwd.type = isPwd ? 'text' : 'password';
+        regEye.className = isPwd ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+      });
+    }
+
+    function setupAuthForms() {
+      // 1. Sign In
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+
+        try {
+          const user = await AuthManager.login(email, password);
+          showToast(`Welcome back, ${user.name}!`, 'success');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 400);
+        } catch (err) {
+          showToast(err.message || 'Login failed', 'error');
+        }
+      });
+
+      // 2. Register
+      document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const dept = document.getElementById('regDept').value;
+        const role = document.getElementById('regRole').value;
+        const password = document.getElementById('regPassword').value;
+        const color = document.getElementById('regColor').value;
+
+        try {
+          const user = await AuthManager.register(name, email, password, role, dept, color);
+          showToast(`Account created for ${user.name}!`, 'success');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 400);
+        } catch (err) {
+          showToast(err.message || 'Registration failed', 'error');
+        }
+      });
+    }
+
+    async function quickLogin(email, password) {
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPassword').value = password;
+      try {
+        const user = await AuthManager.login(email, password);
+        showToast(`Signed in as ${user.name} (${user.role.toUpperCase()})`, 'success');
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 400);
+      } catch (err) {
+        showToast(err.message || 'Login failed', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

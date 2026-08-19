@@ -18,7 +18,6 @@
   <link rel="stylesheet" href="shared.css" />
 
   <style>
-    /* Statement Paper Styles */
     .statement-sheet {
       background-color: #ffffff;
       color: #0f172a;
@@ -53,7 +52,7 @@
     .stmt-doc-type {
       font-size: 0.8rem;
       font-weight: 800;
-      color: #2563eb;
+      color: #4f46e5;
       letter-spacing: 0.08em;
       margin-top: 0.35rem;
     }
@@ -105,40 +104,53 @@
       color: #1e293b;
     }
 
-    .stmt-sign-footer {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #cbd5e1;
+    .stmt-subtable tfoot td {
+      padding: 0.75rem;
+      font-weight: 800;
+      border-top: 2px solid #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .stmt-signatures {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      gap: 2rem;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 2.5rem;
+      margin-top: 1.5rem;
     }
 
-    .stmt-signature-box {
+    .stmt-sig-block {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 0.5rem;
+    }
+
+    .stmt-sig-line {
+      width: 200px;
+      border-top: 1px dashed #64748b;
+    }
+
+    .stmt-sig-title {
       font-size: 0.75rem;
       font-weight: 700;
       color: #334155;
+      text-align: center;
     }
 
-    .stmt-sign-line {
-      width: 180px;
-      height: 1px;
-      background: #0f172a;
-      margin-top: 2.5rem;
+    .stmt-sig-name {
+      font-size: 0.7rem;
+      color: #64748b;
+      text-align: center;
     }
 
     @media print {
       body { background: #ffffff !important; color: #000000 !important; }
-      .app-sidebar, .app-topbar, .no-print, .toast-container { display: none !important; }
+      .app-sidebar, .app-topbar, .no-print, .btn, .content-card-header, #filterCard { display: none !important; }
       .app-main-content { margin-left: 0 !important; width: 100% !important; }
-      .page-body { padding: 0 !important; }
-      .statement-sheet { border: none !important; box-shadow: none !important; padding: 0 !important; }
-      .stmt-header { border-bottom: 2pt solid #000000 !important; }
+      .app-content-body { padding: 0 !important; }
+      .statement-sheet { border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
     }
   </style>
 </head>
@@ -168,10 +180,10 @@
       </a>
       <a href="analytics.html" class="nav-link">
         <i class="fa-solid fa-chart-column"></i>
-        <span>Analytics & Costs</span>
+        <span>Analytics &amp; Costs</span>
       </a>
 
-      <span class="nav-section-title">Executive & Audit</span>
+      <span class="nav-section-title">Reports &amp; Tools</span>
       <a href="statements.html" class="nav-link active">
         <i class="fa-solid fa-file-invoice-dollar"></i>
         <span>Financial Statement</span>
@@ -188,14 +200,20 @@
         <i class="fa-solid fa-sliders"></i>
         <span>Settings</span>
       </a>
+
+      <span class="nav-section-title">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Admin Command Hub</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Executive Admin</span>
-          <span class="user-role">Finance Controller</span>
+          <span class="user-name">Elena Rostova</span>
+          <span class="user-role">Finance Director • Management</span>
         </div>
       </div>
     </div>
@@ -211,341 +229,304 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <div class="page-heading">
-          <h1 class="page-title">Financial Statement Generator</h1>
-          <span class="page-breadcrumb">Apex Business Finance / Profit &amp; Loss Reports</span>
+          <h1 class="page-title">Executive Financial Statement (P&amp;L)</h1>
+          <span class="page-breadcrumb">Apex Business Finance / Profit &amp; Loss Generator</span>
         </div>
       </div>
 
       <div class="topbar-actions">
-        <span class="backend-badge" id="backendStatusBadge">
-          <span class="status-dot"></span>
-          <span id="backendStatusText">Checking storage...</span>
-        </span>
-
-        <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
-          <i class="fa-solid fa-sun icon-sun"></i>
-          <i class="fa-solid fa-moon icon-moon"></i>
+        <button class="btn btn-secondary btn-sm" id="exportCsvBtn">
+          <i class="fa-solid fa-file-csv"></i> Export CSV
         </button>
+        <button class="btn btn-primary btn-sm" id="printBtn">
+          <i class="fa-solid fa-print"></i> Print Executive PDF
+        </button>
+        <a href="admin.html" class="admin-hub-link" title="Open Admin Portal">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin Portal</span>
+        </a>
       </div>
     </header>
 
-    <!-- Page Body -->
-    <div class="page-body">
+    <!-- Content Body -->
+    <div class="app-content-body">
       
-      <!-- Toolbar Controls (No Print) -->
-      <div class="card no-print">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
-          
-          <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
-            <label class="form-label" style="margin:0;">Statement Period:</label>
-            <select id="stmtPeriodPreset" class="admin-select" style="width: auto;">
-              <option value="this-month" selected>This Month</option>
-              <option value="last-month">Last Month</option>
-              <option value="this-quarter">This Quarter</option>
-              <option value="all">All-Time History</option>
-              <option value="custom">Custom Date Range</option>
-            </select>
-
-            <div id="customDateWrap" style="display:none; gap:0.5rem; align-items:center;">
-              <input type="date" id="stmtFromDate" class="admin-input" style="width: auto;" />
-              <span>to</span>
-              <input type="date" id="stmtToDate" class="admin-input" style="width: auto;" />
+      <!-- Filter Parameters Card -->
+      <div class="content-card no-print" id="filterCard">
+        <div class="content-card-body" style="padding: 1.25rem 1.75rem;">
+          <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="min-width: 220px;">
+              <label class="form-label" for="periodPreset">Statement Period:</label>
+              <select id="periodPreset" class="form-select">
+                <option value="this-month" selected>This Month</option>
+                <option value="last-month">Last Month</option>
+                <option value="this-quarter">This Quarter</option>
+                <option value="all">All-Time Financial History</option>
+                <option value="custom">Custom Date Range</option>
+              </select>
             </div>
 
-            <button id="generateStmtBtn" class="btn btn-primary btn-sm">
-              <i class="fa-solid fa-arrows-rotate"></i> Generate
+            <div id="customDateRange" style="display: none; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="stmtStartDate">From:</label>
+                <input type="date" id="stmtStartDate" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="stmtEndDate">To:</label>
+                <input type="date" id="stmtEndDate" class="form-input" />
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="generateBtn">
+              <i class="fa-solid fa-arrows-rotate"></i> Generate Statement
             </button>
           </div>
-
-          <div style="display:flex; gap:0.5rem;">
-            <button id="printBtn" class="btn btn-success btn-sm">
-              <i class="fa-solid fa-print"></i> Print Statement (PDF)
-            </button>
-            <button id="exportCsvBtn" class="btn btn-secondary btn-sm">
-              <i class="fa-solid fa-file-excel"></i> Export CSV
-            </button>
-          </div>
-
         </div>
       </div>
 
-      <!-- Printable Statement Sheet -->
-      <div class="statement-sheet" id="printDoc">
+      <!-- Formal Statement Document Sheet -->
+      <div class="statement-sheet">
         
         <!-- Header -->
         <div class="stmt-header">
           <div>
             <h2 class="stmt-company-title" id="stmtCompanyHeading">Apex Business Solutions Pvt. Ltd.</h2>
-            <p style="font-size:0.85rem; color:#475569; font-weight:600; margin-top:0.2rem;" id="stmtTaxMeta">GSTIN: 27AABCU9603R1ZN &bull; Financial Year: 2026-2027</p>
-            <p class="stmt-doc-type">OFFICIAL STATEMENT OF INCOME &amp; EXPENSES (PROFIT &amp; LOSS)</p>
+            <div class="stmt-doc-type">OFFICIAL PROFIT &amp; LOSS STATEMENT (P&amp;L)</div>
+            <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;" id="stmtTaxMeta">
+              GSTIN: 27AABCU9603R1ZN • Financial Year: 2026-2027
+            </p>
           </div>
-          <div style="text-align:right; font-size:0.825rem; color:#334155; display:flex; flex-direction:column; gap:0.25rem;">
-            <div><span>Statement Period:</span> <strong id="stmtPeriodDisplay">Current Month</strong></div>
-            <div><span>Generated On:</span> <strong id="stmtDateDisplay">18 Aug 2026</strong></div>
-            <div><span>Status:</span> <strong style="color:#059669;">Audited &amp; Certified</strong></div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Reporting Period</div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: #0f172a;" id="stmtPeriodText">This Month</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;" id="stmtGeneratedDate">Generated: 19 Aug 2026</div>
           </div>
         </div>
 
-        <!-- KPIs -->
+        <!-- Executive KPIs -->
         <div class="stmt-kpis">
           <div class="stmt-kpi-box">
-            <span class="stmt-kpi-label">1. Gross Revenue</span>
-            <span class="stmt-kpi-val" style="color:#059669;" id="stmtRevenue">₹0.00</span>
+            <span class="stmt-kpi-label">Gross Revenue</span>
+            <span class="stmt-kpi-val" style="color: #059669;" id="stmtGrossRevenue">₹0.00</span>
           </div>
           <div class="stmt-kpi-box">
-            <span class="stmt-kpi-label">2. Operating Expenses</span>
-            <span class="stmt-kpi-val" style="color:#dc2626;" id="stmtExpense">₹0.00</span>
+            <span class="stmt-kpi-label">Operating Expenses</span>
+            <span class="stmt-kpi-val" style="color: #e11d48;" id="stmtTotalExpense">₹0.00</span>
           </div>
           <div class="stmt-kpi-box highlight">
-            <span class="stmt-kpi-label">3. Net Operating Profit</span>
-            <span class="stmt-kpi-val" style="color:#2563eb;" id="stmtNetProfit">₹0.00</span>
+            <span class="stmt-kpi-label" style="color: #4f46e5;">Net Operating Profit</span>
+            <span class="stmt-kpi-val" style="color: #1e3a8a;" id="stmtNetProfit">₹0.00</span>
           </div>
           <div class="stmt-kpi-box">
-            <span class="stmt-kpi-label">4. Profit Margin</span>
+            <span class="stmt-kpi-label">Operating Margin</span>
             <span class="stmt-kpi-val" id="stmtMargin">0.00%</span>
           </div>
         </div>
 
-        <!-- Breakdown Split -->
+        <!-- Tables Split: Revenue vs Expense Breakdown -->
         <div class="stmt-tables-split">
-          
           <div>
-            <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:0.65rem; color:#059669;">
-              <i class="fa-solid fa-circle-arrow-down"></i> Revenue Inflow Breakdown
-            </h3>
             <table class="stmt-subtable">
-              <thead><tr><th>Revenue Stream</th><th class="text-right">Amount (INR)</th></tr></thead>
-              <tbody id="stmtRevenueRows"></tbody>
+              <thead>
+                <tr>
+                  <th>Revenue Stream / Category</th>
+                  <th style="text-align: right;">Amount (INR)</th>
+                </tr>
+              </thead>
+              <tbody id="stmtRevenueTbody">
+                <tr><td colspan="2" style="text-align: center; color: #94a3b8;">No revenue recorded</td></tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Total Gross Revenue</td>
+                  <td style="text-align: right; color: #059669;" id="stmtFootRevenue">₹0.00</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
 
           <div>
-            <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:0.65rem; color:#dc2626;">
-              <i class="fa-solid fa-circle-arrow-up"></i> Operating Costs Breakdown
-            </h3>
             <table class="stmt-subtable">
-              <thead><tr><th>Cost Category</th><th class="text-right">Amount (INR)</th></tr></thead>
-              <tbody id="stmtExpenseRows"></tbody>
+              <thead>
+                <tr>
+                  <th>Expense Category</th>
+                  <th style="text-align: right;">Amount (INR)</th>
+                </tr>
+              </thead>
+              <tbody id="stmtExpenseTbody">
+                <tr><td colspan="2" style="text-align: center; color: #94a3b8;">No expenses recorded</td></tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Total Operating Expenses</td>
+                  <td style="text-align: right; color: #e11d48;" id="stmtFootExpense">₹0.00</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-
         </div>
 
-        <!-- Full Line Item Ledger -->
-        <div>
-          <h3 style="font-size:0.95rem; font-weight:800; margin-bottom:0.65rem;">Itemized Transaction Ledger</h3>
-          <table class="stmt-subtable">
-            <thead>
-              <tr><th>Date</th><th>Description</th><th>Category</th><th>Classification</th><th class="text-right">Amount</th></tr>
-            </thead>
-            <tbody id="stmtLedgerRows"></tbody>
-          </table>
-        </div>
-
-        <!-- Footer & Signatures -->
-        <div class="stmt-sign-footer">
-          <div style="font-size:0.75rem; color:#64748b; max-width:450px; line-height:1.4;">
-            <p><strong>Certification:</strong> Extracted from corporate SQLite database records.</p>
-            <p>All deletions and changes are securely logged in the immutable audit ledger.</p>
+        <!-- Auditor Signature Block -->
+        <div class="stmt-signatures">
+          <div style="font-size: 0.75rem; color: #64748b;">
+            <p><strong>Apex Business Solutions Pvt. Ltd.</strong></p>
+            <p>Automated Financial Ledger • SQLite ACID Concurrency Verified</p>
           </div>
-          <div style="display:flex; gap:2.5rem;">
-            <div class="stmt-signature-box">
-              <div class="stmt-sign-line"></div>
-              <span>Prepared By (Accountant)</span>
-            </div>
-            <div class="stmt-signature-box">
-              <div class="stmt-sign-line"></div>
-              <span>Authorized Signatory (Admin)</span>
-            </div>
+
+          <div class="stmt-sig-block">
+            <div class="stmt-sig-line"></div>
+            <div class="stmt-sig-title">Elena Rostova, Finance Controller</div>
+            <div class="stmt-sig-name">Authorized Executive Auditor Signature</div>
           </div>
         </div>
 
       </div>
 
     </div>
-
   </div>
 
-  <!-- Shared Engine Script -->
+  <!-- Shared JS -->
   <script src="shared.js"></script>
-
-  <!-- Statement Controller -->
   <script>
-    let statementTransactions = [];
+    let statementCache = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      setupListeners();
-      await loadGlobalBusinessProfile();
-      await generateStatement('this-month');
+      setupPeriodPreset();
+      await fetchAndRenderStatement('this-month');
     });
 
-    function setupListeners() {
-      const preset = document.getElementById('stmtPeriodPreset');
-      const customWrap = document.getElementById('customDateWrap');
+    function setupPeriodPreset() {
+      const preset = document.getElementById('periodPreset');
+      const customDiv = document.getElementById('customDateRange');
 
-      preset.addEventListener('change', () => {
-        if (preset.value === 'custom') {
-          customWrap.style.display = 'flex';
+      preset.addEventListener('change', (e) => {
+        if (e.target.value === 'custom') {
+          customDiv.style.display = 'flex';
         } else {
-          customWrap.style.display = 'none';
-          generateStatement(preset.value);
+          customDiv.style.display = 'none';
+          fetchAndRenderStatement(e.target.value);
         }
       });
 
-      document.getElementById('generateStmtBtn').addEventListener('click', () => {
-        generateStatement(preset.value);
+      document.getElementById('generateBtn')?.addEventListener('click', () => {
+        fetchAndRenderStatement(preset.value);
       });
 
-      document.getElementById('printBtn').addEventListener('click', () => {
-        window.print();
-      });
-
-      document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
+      document.getElementById('printBtn')?.addEventListener('click', () => window.print());
+      document.getElementById('exportCsvBtn')?.addEventListener('click', exportCSV);
     }
 
-    async function generateStatement(preset) {
-      await loadGlobalBusinessProfile();
-      const all = await fetchTransactions();
-      const now = new Date();
+    async function fetchAndRenderStatement(preset) {
       let startDate = '';
       let endDate = '';
-      let periodLabel = '';
+      const now = new Date();
 
       if (preset === 'this-month') {
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        startDate = `${y}-${m}-01`;
-        endDate = new Date(y, now.getMonth() + 1, 0).toISOString().split('T')[0];
-        periodLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        startDate = `${year}-${month}-01`;
+        endDate = new Date(year, now.getMonth() + 1, 0).toISOString().split('T')[0];
+        document.getElementById('stmtPeriodText').textContent = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
       } else if (preset === 'last-month') {
-        const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const y = last.getFullYear();
-        const m = String(last.getMonth() + 1).padStart(2, '0');
-        startDate = `${y}-${m}-01`;
-        endDate = new Date(y, last.getMonth() + 1, 0).toISOString().split('T')[0];
-        periodLabel = last.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const year = lastMonth.getFullYear();
+        const month = String(lastMonth.getMonth() + 1).padStart(2, '0');
+        startDate = `${year}-${month}-01`;
+        endDate = new Date(year, lastMonth.getMonth() + 1, 0).toISOString().split('T')[0];
+        document.getElementById('stmtPeriodText').textContent = lastMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
       } else if (preset === 'this-quarter') {
         const qMonth = Math.floor(now.getMonth() / 3) * 3;
         startDate = new Date(now.getFullYear(), qMonth, 1).toISOString().split('T')[0];
         endDate = new Date(now.getFullYear(), qMonth + 3, 0).toISOString().split('T')[0];
-        periodLabel = `Q${Math.floor(now.getMonth() / 3) + 1} (${startDate} to ${endDate})`;
+        document.getElementById('stmtPeriodText').textContent = `Q${Math.floor(now.getMonth() / 3) + 1} (${startDate} to ${endDate})`;
       } else if (preset === 'custom') {
-        startDate = document.getElementById('stmtFromDate').value;
-        endDate = document.getElementById('stmtToDate').value;
+        startDate = document.getElementById('stmtStartDate').value;
+        endDate = document.getElementById('stmtEndDate').value;
+        document.getElementById('stmtPeriodText').textContent = `${startDate || 'Start'} to ${endDate || 'Present'}`;
+      } else {
+        document.getElementById('stmtPeriodText').textContent = 'All-Time Financial Records';
+      }
 
-        if (startDate && endDate && startDate > endDate) {
-          showToast('Start date cannot be after end date', 'error');
-          return;
+      document.getElementById('stmtGeneratedDate').textContent = `Generated: ${now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+
+      try {
+        let url = `${API_BASE}/api/admin/statement`;
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if ([...params.keys()].length > 0) url += `?${params.toString()}`;
+
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          statementCache = json.data;
+          renderStatementSheet(json.data);
         }
-
-        periodLabel = `${startDate || 'Beginning'} to ${endDate || 'Present'}`;
-      } else {
-        periodLabel = 'All-Time Financial History';
-      }
-
-      document.getElementById('stmtPeriodDisplay').textContent = periodLabel;
-      document.getElementById('stmtDateDisplay').textContent = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-
-      // Filter transactions
-      statementTransactions = all.filter((t) => {
-        if (startDate && t.date < startDate) return false;
-        if (endDate && t.date > endDate) return false;
-        return true;
-      });
-
-      renderStatementDocument(statementTransactions);
-    }
-
-    function renderStatementDocument(txs) {
-      let rev = 0;
-      let exp = 0;
-      const revMap = {};
-      const expMap = {};
-
-      txs.forEach((t) => {
-        const amt = Number(t.amount);
-        if (t.type === 'income') {
-          rev += amt;
-          revMap[t.category] = (revMap[t.category] || 0) + amt;
-        } else {
-          exp += amt;
-          expMap[t.category] = (expMap[t.category] || 0) + amt;
-        }
-      });
-
-      const net = rev - exp;
-      const margin = rev > 0 ? ((net / rev) * 100).toFixed(2) : '0.00';
-
-      document.getElementById('stmtRevenue').textContent = formatCurrency(rev);
-      document.getElementById('stmtExpense').textContent = formatCurrency(exp);
-      document.getElementById('stmtNetProfit').textContent = formatCurrency(net);
-      document.getElementById('stmtMargin').textContent = `${margin}%`;
-
-      // Revenue breakdown
-      const revTbody = document.getElementById('stmtRevenueRows');
-      revTbody.innerHTML = '';
-      const revEntries = Object.entries(revMap);
-      if (revEntries.length === 0) {
-        revTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">No revenue streams</td></tr>';
-      } else {
-        revEntries.forEach(([cat, amt]) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td><strong>${escapeHtml(cat)}</strong></td><td class="text-right">${formatCurrency(amt)}</td>`;
-          revTbody.appendChild(tr);
-        });
-      }
-
-      // Expense breakdown
-      const expTbody = document.getElementById('stmtExpenseRows');
-      expTbody.innerHTML = '';
-      const expEntries = Object.entries(expMap);
-      if (expEntries.length === 0) {
-        expTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">No operating costs</td></tr>';
-      } else {
-        expEntries.forEach(([cat, amt]) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td><strong>${escapeHtml(cat)}</strong></td><td class="text-right">${formatCurrency(amt)}</td>`;
-          expTbody.appendChild(tr);
-        });
-      }
-
-      // Ledger rows
-      const ledgerTbody = document.getElementById('stmtLedgerRows');
-      ledgerTbody.innerHTML = '';
-      if (txs.length === 0) {
-        ledgerTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">No transactions in selected period</td></tr>';
-      } else {
-        txs.forEach((t) => {
-          const isInc = t.type === 'income';
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${formatDate(t.date)}</td>
-            <td><strong>${escapeHtml(t.description)}</strong></td>
-            <td>${escapeHtml(t.category)}</td>
-            <td><span class="badge ${isInc ? 'badge-income' : 'badge-expense'}">${t.type.toUpperCase()}</span></td>
-            <td class="text-right" style="color:${isInc ? '#059669' : '#dc2626'}; font-weight:700;">
-              ${isInc ? '+' : '-'}${formatCurrency(t.amount)}
-            </td>
-          `;
-          ledgerTbody.appendChild(tr);
-        });
+      } catch (e) {
+        console.warn('Statement fetch error:', e);
       }
     }
 
-    function exportCsv() {
-      if (statementTransactions.length === 0) {
-        showToast('No statement data to export', 'info');
+    function renderStatementSheet(data) {
+      document.getElementById('stmtGrossRevenue').textContent = formatCurrency(data.summary.total_revenue);
+      document.getElementById('stmtTotalExpense').textContent = formatCurrency(data.summary.total_expense);
+      document.getElementById('stmtNetProfit').textContent = formatCurrency(data.summary.net_profit);
+      document.getElementById('stmtMargin').textContent = `${data.summary.profit_margin_percent}%`;
+      document.getElementById('stmtFootRevenue').textContent = formatCurrency(data.summary.total_revenue);
+      document.getElementById('stmtFootExpense').textContent = formatCurrency(data.summary.total_expense);
+
+      const revTbody = document.getElementById('stmtRevenueTbody');
+      const expTbody = document.getElementById('stmtExpenseTbody');
+
+      const revEntries = Object.entries(data.revenue_breakdown || {});
+      revTbody.innerHTML = revEntries.length > 0
+        ? revEntries.map(([cat, amt]) => `
+          <tr>
+            <td>${escapeHtml(cat)}</td>
+            <td style="text-align: right; font-weight: 700; color: #059669;">${formatCurrency(amt)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="2" style="text-align: center; color: #94a3b8;">No revenue recorded</td></tr>';
+
+      const expEntries = Object.entries(data.expense_breakdown || {});
+      expTbody.innerHTML = expEntries.length > 0
+        ? expEntries.map(([cat, amt]) => `
+          <tr>
+            <td>${escapeHtml(cat)}</td>
+            <td style="text-align: right; font-weight: 700; color: #e11d48;">${formatCurrency(amt)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="2" style="text-align: center; color: #94a3b8;">No expenses recorded</td></tr>';
+    }
+
+    function exportCSV() {
+      if (!statementCache || !statementCache.transactions) {
+        showToast('No statement data to export', 'error');
         return;
       }
-      const headers = ['Transaction ID', 'Date', 'Type', 'Category', 'Description', 'Amount'];
-      const rows = statementTransactions.map((t) => [`"${t.id}"`, `"${t.date}"`, `"${t.type.toUpperCase()}"`, `"${t.category}"`, `"${t.description.replace(/"/g, '""')}"`, t.amount]);
-      const csv = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-      const link = document.createElement('a');
-      link.setAttribute('href', encodeURI(csv));
-      link.setAttribute('download', `Financial_Statement_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+
+      const txs = statementCache.transactions;
+      const headers = ['Transaction ID', 'Description', 'Type', 'Category', 'Date', 'User Name', 'Department', 'Amount (INR)'];
+      const rows = txs.map(t => [
+        `"${t.id}"`,
+        `"${t.description.replace(/"/g, '""')}"`,
+        `"${t.type}"`,
+        `"${t.category}"`,
+        `"${t.date}"`,
+        `"${t.user_name || 'Staff'}"`,
+        `"${t.department || 'General'}"`,
+        t.amount
+      ]);
+
+      const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Statement_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>

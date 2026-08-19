@@ -3,407 +3,504 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Business Finance Admin Portal — Audit Ledger, Deletion Archives, and Financial Statement Generator." />
-  <title>Admin Portal — Business Finance & Audit Statements</title>
+  <meta name="description" content="Apex Business Finance — Executive Admin Command Portal & Security Policy Center" />
+  <title>Admin Command Center — Apex Business Finance</title>
 
-  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <!-- Google Fonts: Inter, Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
 
-  <!-- Font Awesome 6.5.1 CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Font Awesome 6.5.1 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-  <!-- Admin Stylesheet -->
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="shared.css" />
   <link rel="stylesheet" href="admin.css" />
 </head>
-<body>
-  
-  <div class="admin-layout">
-    
-    <!-- Top Navigation Header -->
-    <header class="admin-header no-print">
-      <div class="header-brand">
-        <div class="admin-badge-icon">
-          <i class="fa-solid fa-building-shield"></i>
+<body class="admin-body">
+
+  <!-- Admin Top Navbar -->
+  <header class="admin-navbar no-print">
+    <div class="admin-brand">
+      <div class="admin-badge-icon">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <div class="admin-brand-text">
+        <h1>Admin Command Portal <span class="admin-role-pill">Executive Level</span></h1>
+        <p id="adminHeaderCompany">Apex Business Solutions Pvt. Ltd.</p>
+      </div>
+    </div>
+
+    <div class="admin-header-actions">
+      <a href="index.html" class="btn btn-outline btn-sm" title="Return to Staff Hub">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Staff Finance Hub</span>
+      </a>
+
+      <button id="refreshAdminBtn" class="btn btn-secondary btn-sm" title="Sync live data">
+        <i class="fa-solid fa-rotate"></i>
+        <span>Sync</span>
+      </button>
+
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
+        <i class="fa-solid fa-sun icon-sun"></i>
+        <i class="fa-solid fa-moon icon-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Admin Container -->
+  <main class="admin-container">
+
+    <!-- Executive KPI Summary Ribbon -->
+    <section class="kpi-grid no-print" aria-label="Executive Financial Summary">
+      <div class="kpi-card revenue">
+        <div class="kpi-header">
+          <span class="kpi-label">Gross Revenue</span>
+          <div class="kpi-icon-bubble income"><i class="fa-solid fa-arrow-trend-up"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiRevenue">₹0.00</div>
+        <div class="kpi-footer" id="kpiIncomeCount">0 revenue transactions</div>
+      </div>
+
+      <div class="kpi-card expense">
+        <div class="kpi-header">
+          <span class="kpi-label">Operating Expenses</span>
+          <div class="kpi-icon-bubble expense"><i class="fa-solid fa-arrow-trend-down"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiExpense">₹0.00</div>
+        <div class="kpi-footer" id="kpiExpenseCount">0 cost records</div>
+      </div>
+
+      <div class="kpi-card profit">
+        <div class="kpi-header">
+          <span class="kpi-label">Net Operating Profit</span>
+          <div class="kpi-icon-bubble profit"><i class="fa-solid fa-chart-line"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiNetProfit">₹0.00</div>
+        <div class="kpi-footer" id="kpiMargin">Operating Margin: 0%</div>
+      </div>
+
+      <div class="kpi-card policy">
+        <div class="kpi-header">
+          <span class="kpi-label">Audit Policy Status</span>
+          <div class="kpi-icon-bubble policy" id="kpiPolicyIcon"><i class="fa-solid fa-lock"></i></div>
+        </div>
+        <div class="kpi-value" id="kpiPolicyText" style="font-size: 1.35rem;">IMMUTABLE</div>
+        <div class="kpi-footer" id="kpiPolicySub">Soft-Deletes Enforced</div>
+      </div>
+    </section>
+
+    <!-- Admin Navigation Tabs -->
+    <nav class="admin-tabs no-print">
+      <button class="admin-tab-btn active" data-tab="tabPolicy">
+        <i class="fa-solid fa-shield-cat"></i>
+        <span>Security Policy &amp; Purge</span>
+      </button>
+      <button class="admin-tab-btn" data-tab="tabTeam">
+        <i class="fa-solid fa-users-gear"></i>
+        <span>Team &amp; Users</span>
+      </button>
+      <button class="admin-tab-btn" data-tab="tabStatement">
+        <i class="fa-solid fa-file-invoice-dollar"></i>
+        <span>Financial Statements</span>
+      </button>
+      <button class="admin-tab-btn" data-tab="tabAudit">
+        <i class="fa-solid fa-list-check"></i>
+        <span>System Audit Ledger</span>
+      </button>
+      <button class="admin-tab-btn" data-tab="tabSettings">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Company Settings</span>
+      </button>
+    </nav>
+
+    <!-- =====================================================================
+         TAB 1: SECURITY POLICY & PURGE MANAGER
+         ===================================================================== -->
+    <section class="admin-panel active" id="tabPolicy">
+      
+      <!-- Policy Hero Card -->
+      <div class="policy-card-hero locked" id="policyHeroCard">
+        <div class="policy-hero-left">
+          <div class="policy-shield-icon" id="policyShieldIcon">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <div class="policy-hero-text">
+            <h2>
+              <span>Immutable Ledger Enforcement</span>
+              <span class="policy-status-indicator" id="policyStatusBadge">ACTIVE (LOCKED)</span>
+            </h2>
+            <p id="policyHeroDesc">
+              When <strong>Immutable Policy is Active</strong>, all deletion actions are soft-deletes only, preserved in the tamper-evident audit ledger and recoverable at any time. When <strong>Disabled</strong>, administrators gain permanent database purge capabilities.
+            </p>
+          </div>
         </div>
         <div>
-          <div class="brand-title-wrap">
-            <h1 class="admin-title">Admin Management Portal</h1>
-            <span class="role-pill">Executive Admin</span>
-          </div>
-          <p class="admin-subtitle" id="headerCompanyName">Apex Business Solutions Pvt. Ltd.</p>
+          <button class="btn btn-secondary btn-lg" id="togglePolicyBtn">
+            <i class="fa-solid fa-toggle-on" id="policyToggleIcon"></i>
+            <span id="policyToggleBtnText">Disable Immutable Policy</span>
+          </button>
         </div>
       </div>
 
-      <div class="header-controls">
-        <a href="index.html" class="btn btn-outline" title="Return to General Expense Tracker">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span>Staff Tracker</span>
-        </a>
-
-        <button id="refreshAdminBtn" class="btn btn-secondary" title="Refresh Live Database Data">
-          <i class="fa-solid fa-rotate"></i>
-          <span>Sync</span>
-        </button>
-
-        <button id="adminThemeToggle" class="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle Theme">
-          <i class="fa-solid fa-sun icon-sun"></i>
-          <i class="fa-solid fa-moon icon-moon"></i>
-        </button>
+      <!-- Archived Items & Purge Table -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Archived Trash &amp; Soft-Deleted Transactions</h3>
+            <p class="card-subtitle">Transactions marked as deleted. Permanent purge is restricted by security policy.</p>
+          </div>
+          <div>
+            <button class="btn btn-danger-outline btn-sm" id="emptyTrashBtn" style="display: none;">
+              <i class="fa-solid fa-trash-can"></i>
+              <span>Empty All Trash (Permanent Purge)</span>
+            </button>
+          </div>
+        </div>
+        <div class="content-card-body" style="padding: 0;">
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Transaction</th>
+                  <th>Created By</th>
+                  <th>Department</th>
+                  <th>Amount</th>
+                  <th>Deleted Timestamp</th>
+                  <th>Reason</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="archivedTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading archive records...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </header>
+    </section>
 
-    <!-- Main Admin Body -->
-    <main class="admin-main">
-
-      <!-- Executive KPI Ribbon (No Print) -->
-      <section class="kpi-ribbon no-print" aria-label="Executive Financial Summary">
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Gross Revenue</span>
-            <div class="kpi-icon-wrap kpi-revenue">
-              <i class="fa-solid fa-arrow-trend-up"></i>
-            </div>
+    <!-- =====================================================================
+         TAB 2: TEAM & MULTI-USER MANAGEMENT
+         ===================================================================== -->
+    <section class="admin-panel" id="tabTeam">
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Corporate Team Roster &amp; Access Roles</h3>
+            <p class="card-subtitle">Manage authorized staff, department assignments, and spending attribution.</p>
           </div>
-          <div class="kpi-val" id="kpiRevenue">₹0.00</div>
-          <span class="kpi-sub" id="kpiIncomeCount">0 revenue transactions</span>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Operating Expenses</span>
-            <div class="kpi-icon-wrap kpi-expense">
-              <i class="fa-solid fa-arrow-trend-down"></i>
-            </div>
+          <div>
+            <button class="btn btn-primary btn-sm" id="openAddUserModalBtn">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Add Team Member</span>
+            </button>
           </div>
-          <div class="kpi-val" id="kpiExpense">₹0.00</div>
-          <span class="kpi-sub" id="kpiExpenseCount">0 cost entries</span>
         </div>
-
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Net Operating Profit</span>
-            <div class="kpi-icon-wrap kpi-profit" id="kpiProfitIcon">
-              <i class="fa-solid fa-chart-line"></i>
-            </div>
+        <div class="content-card-body" style="padding: 0;">
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Team Member</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Department</th>
+                  <th>Expenses Logged</th>
+                  <th>Total Spent</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="teamTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading team roster...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="kpi-val" id="kpiNetProfit">₹0.00</div>
-          <span class="kpi-sub" id="kpiMargin">Margin: 0%</span>
         </div>
-
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Audit Log Activity</span>
-            <div class="kpi-icon-wrap kpi-audit">
-              <i class="fa-solid fa-clock-rotate-left"></i>
-            </div>
-          </div>
-          <div class="kpi-val" id="kpiAuditCount">0 Logs</div>
-          <span class="kpi-sub" id="kpiDeletedCount">0 archived items</span>
-        </div>
-      </section>
-
-      <!-- Admin Navigation Tabs (No Print) -->
-      <div class="admin-nav-tabs no-print">
-        <button class="nav-tab active" data-view="statementView">
-          <i class="fa-solid fa-file-invoice-dollar"></i>
-          <span>Financial Statement Generator</span>
-        </button>
-        <button class="nav-tab" data-view="auditLedgerView">
-          <i class="fa-solid fa-list-check"></i>
-          <span>Audit & Change Ledger</span>
-        </button>
-        <button class="nav-tab" data-view="deletedArchiveView">
-          <i class="fa-solid fa-box-archive"></i>
-          <span>Archived / Deleted Items</span>
-        </button>
-        <button class="nav-tab" data-view="settingsView">
-          <i class="fa-solid fa-sliders"></i>
-          <span>Business Profile</span>
-        </button>
       </div>
+    </section>
 
-      <!-- VIEW 1: Financial Statement Generator -->
-      <section class="admin-view-panel" id="statementView">
-        
-        <!-- Controls Toolbar (No Print) -->
-        <div class="statement-toolbar no-print">
-          <div class="period-controls">
-            <div class="filter-field">
-              <label for="periodPreset">Statement Period:</label>
-              <select id="periodPreset" class="admin-select">
-                <option value="all">All-Time Records</option>
+    <!-- =====================================================================
+         TAB 3: FINANCIAL STATEMENT (P&L) GENERATOR
+         ===================================================================== -->
+    <section class="admin-panel" id="tabStatement">
+      <div class="content-card no-print">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Statement Parameters</h3>
+            <p class="card-subtitle">Generate official financial statement by period.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" id="exportStatementCsvBtn">
+              <i class="fa-solid fa-file-csv"></i> Export CSV
+            </button>
+            <button class="btn btn-primary btn-sm" id="printStatementBtn">
+              <i class="fa-solid fa-print"></i> Print Official Sheet
+            </button>
+          </div>
+        </div>
+        <div class="content-card-body">
+          <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="min-width: 200px;">
+              <label class="form-label" for="stmtPeriodPreset">Period Preset:</label>
+              <select id="stmtPeriodPreset" class="form-select">
                 <option value="this-month" selected>This Month</option>
                 <option value="last-month">Last Month</option>
                 <option value="this-quarter">This Quarter</option>
+                <option value="all">All-Time Financial History</option>
                 <option value="custom">Custom Date Range</option>
               </select>
             </div>
 
-            <div class="date-range-fields" id="customDateRange" style="display: none;">
-              <div class="filter-field">
-                <label for="stmtStartDate">From:</label>
-                <input type="date" id="stmtStartDate" class="admin-input" />
+            <div id="stmtCustomDates" style="display: none; gap: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="stmtStartDate">From:</label>
+                <input type="date" id="stmtStartDate" class="form-input" />
               </div>
-              <div class="filter-field">
-                <label for="stmtEndDate">To:</label>
-                <input type="date" id="stmtEndDate" class="admin-input" />
+              <div class="form-group">
+                <label class="form-label" for="stmtEndDate">To:</label>
+                <input type="date" id="stmtEndDate" class="form-input" />
               </div>
             </div>
 
-            <button id="generateStmtBtn" class="btn btn-primary">
-              <i class="fa-solid fa-arrows-rotate"></i>
-              <span>Generate</span>
-            </button>
-          </div>
-
-          <div class="statement-actions">
-            <button id="printStmtBtn" class="btn btn-success" title="Print statement or save as official PDF">
-              <i class="fa-solid fa-print"></i>
-              <span>Print Statement (PDF)</span>
-            </button>
-            <button id="exportStmtCsvBtn" class="btn btn-outline" title="Export statement data as CSV">
-              <i class="fa-solid fa-file-excel"></i>
-              <span>Export CSV</span>
+            <button class="btn btn-primary" id="generateStmtBtn">
+              <i class="fa-solid fa-arrows-rotate"></i> Generate
             </button>
           </div>
         </div>
+      </div>
 
-        <!-- Official Printable Financial Statement Paper -->
-        <div class="statement-document" id="statementPrintDocument">
-          
-          <!-- Document Header -->
-          <div class="stmt-header">
-            <div class="stmt-company-info">
-              <h2 class="stmt-company-name" id="stmtCompanyName">Apex Business Solutions Pvt. Ltd.</h2>
-              <p class="stmt-company-meta" id="stmtCompanyTaxId">GSTIN: 27AABCU9603R1ZN &bull; Financial Year: 2026-2027</p>
-              <p class="stmt-doc-type">OFFICIAL STATEMENT OF INCOME & EXPENSES (PROFIT &amp; LOSS)</p>
-            </div>
-            <div class="stmt-doc-meta">
-              <div class="meta-row"><span>Statement Period:</span> <strong id="stmtPeriodText">Current Month</strong></div>
-              <div class="meta-row"><span>Generated On:</span> <strong id="stmtGeneratedDate">18 Aug 2026</strong></div>
-              <div class="meta-row"><span>Status:</span> <strong class="badge-audited">Audited & Verified</strong></div>
-            </div>
+      <!-- Printable Statement Sheet -->
+      <div class="content-card" style="background: #ffffff; color: #0f172a; padding: 2.5rem;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 1.25rem; margin-bottom: 1.5rem;">
+          <div>
+            <h2 style="font-family: var(--font-heading); font-size: 1.65rem; font-weight: 900; color: #0f172a;" id="stmtDocCompanyName">Apex Business Solutions Pvt. Ltd.</h2>
+            <p style="font-size: 0.8rem; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-top: 0.25rem;">Executive Profit &amp; Loss (P&amp;L) Statement</p>
+            <p style="font-size: 0.8rem; color: #64748b;" id="stmtDocTaxMeta">GSTIN: 27AABCU9603R1ZN • FY: 2026-2027</p>
           </div>
-
-          <!-- Document Financial Summary Metrics -->
-          <div class="stmt-summary-grid">
-            <div class="stmt-metric-box">
-              <span class="stmt-metric-label">1. Gross Business Revenue</span>
-              <span class="stmt-metric-val revenue-val" id="stmtGrossRevenue">₹0.00</span>
-            </div>
-            <div class="stmt-metric-box">
-              <span class="stmt-metric-label">2. Total Operating Expenses</span>
-              <span class="stmt-metric-val expense-val" id="stmtTotalExpenses">₹0.00</span>
-            </div>
-            <div class="stmt-metric-box highlight">
-              <span class="stmt-metric-label">3. Net Operating Profit / (Loss)</span>
-              <span class="stmt-metric-val profit-val" id="stmtNetProfit">₹0.00</span>
-            </div>
-            <div class="stmt-metric-box">
-              <span class="stmt-metric-label">4. Operating Profit Margin</span>
-              <span class="stmt-metric-val" id="stmtProfitMargin">0.00%</span>
-            </div>
+          <div style="text-align: right;">
+            <p style="font-size: 0.75rem; color: #64748b;">Period:</p>
+            <p style="font-size: 1rem; font-weight: 700;" id="stmtDocPeriod">This Month</p>
+            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;" id="stmtDocGeneratedAt">Generated: 19 Aug 2026</p>
           </div>
-
-          <!-- Statement Breakdown Sections -->
-          <div class="stmt-tables-split">
-            
-            <!-- Revenue Breakdown -->
-            <div class="stmt-table-card">
-              <h3 class="stmt-section-title">
-                <i class="fa-solid fa-circle-arrow-down revenue-icon"></i>
-                Revenue & Inflow Breakdown
-              </h3>
-              <table class="stmt-table">
-                <thead>
-                  <tr>
-                    <th>Revenue Stream</th>
-                    <th class="text-right">Amount (INR)</th>
-                  </tr>
-                </thead>
-                <tbody id="stmtRevenueRows">
-                  <!-- Populated dynamically -->
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Expense Breakdown -->
-            <div class="stmt-table-card">
-              <h3 class="stmt-section-title">
-                <i class="fa-solid fa-circle-arrow-up expense-icon"></i>
-                Operating Expenditure Breakdown
-              </h3>
-              <table class="stmt-table">
-                <thead>
-                  <tr>
-                    <th>Expenditure Category</th>
-                    <th class="text-right">Amount (INR)</th>
-                  </tr>
-                </thead>
-                <tbody id="stmtExpenseRows">
-                  <!-- Populated dynamically -->
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-
-          <!-- Full Line-Item Transaction Register -->
-          <div class="stmt-full-ledger">
-            <h3 class="stmt-section-title">Itemized Transaction Ledger</h3>
-            <table class="stmt-table ledger-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Type</th>
-                  <th class="text-right">Amount (INR)</th>
-                </tr>
-              </thead>
-              <tbody id="stmtLedgerRows">
-                <!-- Populated dynamically -->
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Official Sign-off Footer -->
-          <div class="stmt-footer">
-            <div class="stmt-notes">
-              <p><strong>Certification:</strong> This financial statement represents an authentic, immutable record extracted from the corporate SQLite ledger.</p>
-              <p>All recorded soft-deletions and modifications are logged in the tamper-evident audit ledger.</p>
-            </div>
-            <div class="stmt-signatures">
-              <div class="signature-box">
-                <div class="sign-line"></div>
-                <span>Prepared By (Accountant)</span>
-              </div>
-              <div class="signature-box">
-                <div class="sign-line"></div>
-                <span>Authorized Signatory (Director / Admin)</span>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-      </section>
-
-      <!-- VIEW 2: Audit & Change Ledger -->
-      <section class="admin-view-panel" id="auditLedgerView" style="display: none;">
-        <div class="panel-card">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">System Audit & Change Ledger</h2>
-              <p class="panel-subtitle">Tamper-evident record of all transactions, additions, and deletions</p>
-            </div>
-            <div class="ledger-filter-group">
-              <button class="audit-filter-pill active" data-action="ALL">All Actions</button>
-              <button class="audit-filter-pill" data-action="CREATE">Created</button>
-              <button class="audit-filter-pill" data-action="DELETE">Deleted</button>
-              <button class="audit-filter-pill" data-action="RESTORE">Restored</button>
-              <button class="audit-filter-pill" data-action="RESET">Reset</button>
-            </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Revenue</span>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #059669;" id="stmtSheetRevenue">₹0.00</div>
           </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Expenses</span>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #e11d48;" id="stmtSheetExpense">₹0.00</div>
+          </div>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem; border-radius: 8px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #2563eb; text-transform: uppercase;">Net Profit</span>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #1e3a8a;" id="stmtSheetNetProfit">₹0.00</div>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px;">
+            <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Operating Margin</span>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a;" id="stmtSheetMargin">0%</div>
+          </div>
+        </div>
 
-          <div class="table-responsive">
-            <table class="admin-table">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+          <div>
+            <h4 style="font-size: 0.9rem; font-weight: 700; border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Revenue Breakdown</h4>
+            <div id="stmtRevenueRows"></div>
+          </div>
+          <div>
+            <h4 style="font-size: 0.9rem; font-weight: 700; border-bottom: 2px solid #cbd5e1; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Expense Breakdown</h4>
+            <div id="stmtExpenseRows"></div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 2rem; display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2rem;">
+          <div style="font-size: 0.75rem; color: #64748b;">
+            <p>System Generated Financial Statement • Apex Finance Engine</p>
+            <p>Cryptographic SQLite Hash Verification Validated</p>
+          </div>
+          <div style="text-align: center; border-top: 1px dashed #94a3b8; width: 220px; padding-top: 0.5rem;">
+            <p style="font-size: 0.8rem; font-weight: 700; color: #0f172a;">Authorized Auditor / CFO</p>
+            <p style="font-size: 0.7rem; color: #64748b;">Elena Rostova, Finance Controller</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         TAB 4: MASTER AUDIT LEDGER
+         ===================================================================== -->
+    <section class="admin-panel" id="tabAudit">
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Tamper-Evident System Audit Ledger</h3>
+            <p class="card-subtitle">Chronological record of all creations, policy changes, deletions, and purges.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="auditSearchInput" class="form-input" placeholder="Search audit logs..." style="width: 220px;" />
+          </div>
+        </div>
+        <div class="content-card-body" style="padding: 0;">
+          <div class="data-table-container">
+            <table class="data-table">
               <thead>
                 <tr>
                   <th>Timestamp</th>
                   <th>Action</th>
-                  <th>Transaction ID</th>
-                  <th>Description & Details</th>
-                  <th>Category</th>
-                  <th class="text-right">Amount</th>
+                  <th>Operator</th>
+                  <th>Target ID</th>
+                  <th>Action Details</th>
                 </tr>
               </thead>
-              <tbody id="auditLedgerTableBody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- VIEW 3: Archived / Deleted Transactions -->
-      <section class="admin-view-panel" id="deletedArchiveView" style="display: none;">
-        <div class="panel-card">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">Archived & Deleted Transactions</h2>
-              <p class="panel-subtitle">Deleted entries are permanently archived for audit compliance and can be restored at any time.</p>
-            </div>
-            <span class="policy-badge">
-              <i class="fa-solid fa-shield-halved"></i> Immutable Archive Policy
-            </span>
-          </div>
-
-          <div class="table-responsive">
-            <table class="admin-table">
-              <thead>
+              <tbody id="auditTableBody">
                 <tr>
-                  <th>Date Deleted</th>
-                  <th>Original Date</th>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Type</th>
-                  <th class="text-right">Amount</th>
-                  <th class="text-center">Action</th>
+                  <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading audit ledger...
+                  </td>
                 </tr>
-              </thead>
-              <tbody id="deletedArchiveTableBody">
-                <!-- Dynamically populated -->
               </tbody>
             </table>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- VIEW 4: Business Settings -->
-      <section class="admin-view-panel" id="settingsView" style="display: none;">
-        <div class="panel-card max-w-xl">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title">Business Profile & Statement Settings</h2>
-              <p class="panel-subtitle">Configure company details to appear on generated financial statements</p>
-            </div>
+    <!-- =====================================================================
+         TAB 5: COMPANY SETTINGS & SYSTEM DATA
+         ===================================================================== -->
+    <section class="admin-panel" id="tabSettings">
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Legal Company Profile</h3>
+            <p class="card-subtitle">Configure legal entity details printed on financial statements.</p>
           </div>
-
-          <form id="businessProfileForm" class="settings-form">
+        </div>
+        <div class="content-card-body">
+          <form id="adminProfileForm" style="display: flex; flex-direction: column; gap: 1.25rem; max-width: 600px;">
             <div class="form-group">
-              <label for="settingCompanyName" class="form-label">Company / Business Name</label>
-              <input type="text" id="settingCompanyName" class="admin-input" required />
+              <label class="form-label" for="settingCompanyName">Legal Company Name:</label>
+              <input type="text" id="settingCompanyName" class="form-input" required />
             </div>
-
             <div class="form-group">
-              <label for="settingTaxId" class="form-label">Tax ID / GSTIN / Registration Number</label>
-              <input type="text" id="settingTaxId" class="admin-input" placeholder="e.g. GSTIN: 27AABCU9603R1ZN" />
+              <label class="form-label" for="settingTaxId">GSTIN / Tax ID Number:</label>
+              <input type="text" id="settingTaxId" class="form-input" placeholder="e.g. GSTIN: 27AABCU9603R1ZN" />
             </div>
-
-            <button type="submit" class="btn btn-primary">
-              <i class="fa-solid fa-floppy-disk"></i>
-              <span>Save Business Profile</span>
-            </button>
+            <div class="form-group">
+              <label class="form-label" for="settingFY">Financial Year:</label>
+              <input type="text" id="settingFY" class="form-input" value="2026-2027" />
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Save Profile Settings
+              </button>
+            </div>
           </form>
         </div>
-      </section>
+      </div>
 
-    </main>
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">System Data Management</h3>
+            <p class="card-subtitle">Database population and maintenance actions.</p>
+          </div>
+        </div>
+        <div class="content-card-body" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <button class="btn btn-secondary" id="seedDataBtn">
+            <i class="fa-solid fa-database"></i> Reload Multi-User Sample Data
+          </button>
+          <button class="btn btn-outline" id="resetDataBtn">
+            <i class="fa-solid fa-box-archive"></i> Archive All Active Transactions
+          </button>
+        </div>
+      </div>
+    </section>
 
-    <!-- Admin Footer -->
-    <footer class="admin-footer no-print">
-      <p>&copy; 2026 <strong>Expense Tracker Enterprise</strong> &bull; Executive Admin &amp; Audit Subsystem.</p>
-    </footer>
+  </main>
 
+  <!-- =====================================================================
+       MODALS
+       ===================================================================== -->
+
+  <!-- 1. Add User Modal -->
+  <div class="modal-backdrop" id="addUserModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Team Member</h3>
+        <button class="modal-close-btn" id="closeAddUserModalBtn">&times;</button>
+      </div>
+      <form id="addUserForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="newUserName">Full Name:</label>
+            <input type="text" id="newUserName" class="form-input" placeholder="e.g. Rachel Adams" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newUserEmail">Corporate Email:</label>
+            <input type="email" id="newUserEmail" class="form-input" placeholder="e.g. rachel@apexsolutions.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newUserRole">Job Title / Role:</label>
+            <input type="text" id="newUserRole" class="form-input" placeholder="e.g. Senior DevOps Engineer" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newUserDept">Department:</label>
+            <select id="newUserDept" class="form-select" required>
+              <option value="Engineering">Engineering</option>
+              <option value="Sales">Sales</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Operations">Operations</option>
+              <option value="Management">Management</option>
+              <option value="Legal">Legal &amp; Finance</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newUserColor">Avatar Color:</label>
+            <input type="color" id="newUserColor" class="form-input" value="#6366f1" style="height: 44px; padding: 2px;" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAddUserBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Member</button>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <!-- Toast Notification System -->
-  <div class="toast-container" id="adminToastContainer" aria-live="polite"></div>
+  <!-- 2. Policy Toggle Warning Modal -->
+  <div class="modal-backdrop" id="policyWarningModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="policyModalTitle">Security Policy Confirmation</h3>
+        <button class="modal-close-btn" id="closePolicyModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="policyModalMessage" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6;">
+          Are you sure you want to change the Immutable Policy?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelPolicyModalBtn">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmPolicyToggleBtn">Confirm Change</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- Admin Controller Script -->
+  <!-- Shared & Admin JS -->
+  <script src="shared.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>

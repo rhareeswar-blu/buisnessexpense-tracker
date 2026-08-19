@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Apex Business Finance — Analytics & Cost Intelligence" />
-  <title>Analytics & Costs — Apex Business Finance</title>
+  <meta name="description" content="Apex Business Finance — Cost Intelligence & Team Analytics" />
+  <title>Analytics &amp; Costs — Apex Business Finance</title>
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -46,10 +46,10 @@
       </a>
       <a href="analytics.html" class="nav-link active">
         <i class="fa-solid fa-chart-column"></i>
-        <span>Analytics & Costs</span>
+        <span>Analytics &amp; Costs</span>
       </a>
 
-      <span class="nav-section-title">Executive & Audit</span>
+      <span class="nav-section-title">Reports &amp; Tools</span>
       <a href="statements.html" class="nav-link">
         <i class="fa-solid fa-file-invoice-dollar"></i>
         <span>Financial Statement</span>
@@ -66,14 +66,20 @@
         <i class="fa-solid fa-sliders"></i>
         <span>Settings</span>
       </a>
+
+      <span class="nav-section-title">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Admin Command Hub</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Executive Admin</span>
-          <span class="user-role">Finance Controller</span>
+          <span class="user-name">Elena Rostova</span>
+          <span class="user-role">Finance Director • Management</span>
         </div>
       </div>
     </div>
@@ -89,12 +95,17 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <div class="page-heading">
-          <h1 class="page-title">Cost Intelligence & Analytics</h1>
-          <span class="page-breadcrumb">Apex Business Finance / Analytics & Cost Insights</span>
+          <h1 class="page-title">Cost Intelligence &amp; Team Analytics</h1>
+          <span class="page-breadcrumb">Apex Business Finance / Departmental Spending Breakdown</span>
         </div>
       </div>
 
       <div class="topbar-actions">
+        <a href="admin.html" class="admin-hub-link" title="Open Admin Portal">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin Portal</span>
+        </a>
+
         <span class="backend-badge" id="backendStatusBadge">
           <span class="status-dot"></span>
           <span id="backendStatusText">Checking storage...</span>
@@ -107,263 +118,265 @@
       </div>
     </header>
 
-    <!-- Page Body -->
-    <div class="page-body">
+    <!-- Content Body -->
+    <div class="app-content-body">
       
-      <!-- Analytics Highlights -->
-      <section class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Top Expense Stream</span>
-            <div class="kpi-icon-wrap kpi-expense"><i class="fa-solid fa-fire"></i></div>
+      <!-- Analytics KPIs -->
+      <section class="kpi-grid" aria-label="Cost Highlights">
+        <div class="kpi-card revenue">
+          <div class="kpi-header">
+            <span class="kpi-label">Total Revenue</span>
+            <div class="kpi-icon-bubble income"><i class="fa-solid fa-arrow-trend-up"></i></div>
           </div>
-          <div class="kpi-val" id="topExpenseCat" style="font-size: 1.25rem;">—</div>
-          <span class="kpi-sub" id="topExpenseAmount">₹0.00 total</span>
+          <div class="kpi-value" id="analyticsRevenue">₹0.00</div>
+          <div class="kpi-footer">Gross Income Inflow</div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Top Revenue Source</span>
-            <div class="kpi-icon-wrap kpi-revenue"><i class="fa-solid fa-trophy"></i></div>
+        <div class="kpi-card expense">
+          <div class="kpi-header">
+            <span class="kpi-label">Total Expenditure</span>
+            <div class="kpi-icon-bubble expense"><i class="fa-solid fa-arrow-trend-down"></i></div>
           </div>
-          <div class="kpi-val" id="topRevenueCat" style="font-size: 1.25rem;">—</div>
-          <span class="kpi-sub" id="topRevenueAmount">₹0.00 total</span>
+          <div class="kpi-value" id="analyticsExpense">₹0.00</div>
+          <div class="kpi-footer">Operating Cash Outflow</div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Average Transaction</span>
-            <div class="kpi-icon-wrap kpi-profit"><i class="fa-solid fa-calculator"></i></div>
+        <div class="kpi-card policy">
+          <div class="kpi-header">
+            <span class="kpi-label">Top Spending Dept</span>
+            <div class="kpi-icon-bubble policy"><i class="fa-solid fa-building"></i></div>
           </div>
-          <div class="kpi-val" id="avgTxSize">₹0.00</div>
-          <span class="kpi-sub">Across all ledger entries</span>
+          <div class="kpi-value" id="analyticsTopDept" style="font-size: 1.35rem;">Management</div>
+          <div class="kpi-footer" id="analyticsTopDeptAmt">₹0.00 total costs</div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Cost / Revenue Ratio</span>
-            <div class="kpi-icon-wrap kpi-margin"><i class="fa-solid fa-scale-balanced"></i></div>
+        <div class="kpi-card profit">
+          <div class="kpi-header">
+            <span class="kpi-label">Top Individual Spender</span>
+            <div class="kpi-icon-bubble profit"><i class="fa-solid fa-user-tag"></i></div>
           </div>
-          <div class="kpi-val" id="costToRevRatio">0%</div>
-          <span class="kpi-sub">Operating Expense Intensity</span>
+          <div class="kpi-value" id="analyticsTopUser" style="font-size: 1.35rem;">Elena Rostova</div>
+          <div class="kpi-footer" id="analyticsTopUserAmt">₹0.00 total spend</div>
         </div>
       </section>
 
       <!-- Charts Grid -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="analytics-charts-grid">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="charts-grid-row">
         
-        <!-- Doughnut Chart -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Expenditure Distribution</h2>
+        <!-- Department Spending Share Chart -->
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="card-title-group">
+              <h3 class="card-title">Department Spending Distribution</h3>
+              <p class="card-subtitle">Expenditure share by operational division</p>
+            </div>
           </div>
-          <div style="height: 300px; position: relative;">
-            <canvas id="analyticsDoughnut"></canvas>
+          <div class="content-card-body" style="height: 320px; position: relative;">
+            <canvas id="deptSpendChart"></canvas>
           </div>
         </div>
 
-        <!-- Monthly Trends -->
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Monthly Capital Flow Trend</h2>
+        <!-- Expense Category Distribution -->
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="card-title-group">
+              <h3 class="card-title">Expense Category Share</h3>
+              <p class="card-subtitle">Spending breakdown across business functions</p>
+            </div>
           </div>
-          <div style="height: 300px; position: relative;">
-            <canvas id="analyticsMonthlyTrend"></canvas>
+          <div class="content-card-body" style="height: 320px; position: relative;">
+            <canvas id="categoryChart"></canvas>
           </div>
         </div>
 
       </div>
 
-      <!-- Itemized Category Breakdown Table -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Operating Expenditure by Category</h2>
-            <p class="card-subtitle">Detailed breakdown of organizational spend across departments</p>
+      <!-- Team Members Spending Table -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Team Member Financial Contributions</h3>
+            <p class="card-subtitle">Itemized expense and revenue tracking per employee</p>
           </div>
         </div>
-
-        <div class="table-responsive">
-          <table class="corporate-table">
-            <thead>
-              <tr>
-                <th>Category Name</th>
-                <th>Transaction Count</th>
-                <th>% of Total Operating Cost</th>
-                <th class="text-right">Total Amount (INR)</th>
-              </tr>
-            </thead>
-            <tbody id="categoryBreakdownBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+        <div class="content-card-body" style="padding: 0;">
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Team Member</th>
+                  <th>Department</th>
+                  <th>Total Revenue Attributed</th>
+                  <th>Total Expenses Submitted</th>
+                  <th>Transactions Logged</th>
+                </tr>
+              </thead>
+              <tbody id="teamAnalyticsTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading team analytics...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
     </div>
-
   </div>
 
-  <!-- Shared Engine Script -->
+  <!-- Shared JS & Analytics Controller -->
   <script src="shared.js"></script>
-
-  <!-- Analytics Page Controller -->
   <script>
-    let doughnutChart = null;
-    let monthlyTrendChart = null;
+    let deptChartInstance = null;
+    let catChartInstance = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      const txs = await fetchTransactions();
-      renderAnalytics(txs);
+      await loadAnalyticsData();
     });
 
-    function renderAnalytics(txs) {
-      const expenses = txs.filter((t) => t.type === 'expense');
-      const incomes = txs.filter((t) => t.type === 'income');
+    async function loadAnalyticsData() {
+      const [txs, teamAnalyticsRes] = await Promise.all([
+        fetchTransactions(),
+        fetch(`${API_BASE}/api/admin/team-analytics`).then(r => r.json()).catch(() => ({ data: {} }))
+      ]);
 
-      let totalExp = 0;
-      let totalRev = 0;
-      const expCatMap = {};
-      const revCatMap = {};
+      let rev = 0;
+      let exp = 0;
+      const deptSpend = {};
+      const userSpend = {};
 
-      expenses.forEach((t) => {
+      txs.forEach(t => {
         const amt = Number(t.amount);
-        totalExp += amt;
-        if (!expCatMap[t.category]) expCatMap[t.category] = { amount: 0, count: 0 };
-        expCatMap[t.category].amount += amt;
-        expCatMap[t.category].count++;
+        const dept = t.department || 'Management';
+        const user = t.user_name || 'Staff';
+
+        if (t.type === 'income') {
+          rev += amt;
+        } else {
+          exp += amt;
+          deptSpend[dept] = (deptSpend[dept] || 0) + amt;
+          userSpend[user] = (userSpend[user] || 0) + amt;
+        }
       });
 
-      incomes.forEach((t) => {
-        const amt = Number(t.amount);
-        totalRev += amt;
-        if (!revCatMap[t.category]) revCatMap[t.category] = { amount: 0, count: 0 };
-        revCatMap[t.category].amount += amt;
-        revCatMap[t.category].count++;
-      });
+      document.getElementById('analyticsRevenue').textContent = formatCurrency(rev);
+      document.getElementById('analyticsExpense').textContent = formatCurrency(exp);
 
-      // Top Highlights
-      const sortedExp = Object.entries(expCatMap).sort((a, b) => b[1].amount - a[1].amount);
-      const sortedRev = Object.entries(revCatMap).sort((a, b) => b[1].amount - a[1].amount);
-
-      if (sortedExp.length > 0) {
-        document.getElementById('topExpenseCat').textContent = sortedExp[0][0];
-        document.getElementById('topExpenseAmount').textContent = formatCurrency(sortedExp[0][1].amount);
-      }
-      if (sortedRev.length > 0) {
-        document.getElementById('topRevenueCat').textContent = sortedRev[0][0];
-        document.getElementById('topRevenueAmount').textContent = formatCurrency(sortedRev[0][1].amount);
+      // Top Dept
+      const sortedDepts = Object.entries(deptSpend).sort((a, b) => b[1] - a[1]);
+      if (sortedDepts.length > 0) {
+        document.getElementById('analyticsTopDept').textContent = sortedDepts[0][0];
+        document.getElementById('analyticsTopDeptAmt').textContent = `${formatCurrency(sortedDepts[0][1])} total`;
       }
 
-      const avg = txs.length > 0 ? (totalRev + totalExp) / txs.length : 0;
-      document.getElementById('avgTxSize').textContent = formatCurrency(avg);
+      // Top User
+      const sortedUsers = Object.entries(userSpend).sort((a, b) => b[1] - a[1]);
+      if (sortedUsers.length > 0) {
+        document.getElementById('analyticsTopUser').textContent = sortedUsers[0][0];
+        document.getElementById('analyticsTopUserAmt').textContent = `${formatCurrency(sortedUsers[0][1])} submitted`;
+      }
 
-      const ratio = totalRev > 0 ? Math.round((totalExp / totalRev) * 100) : 0;
-      document.getElementById('costToRevRatio').textContent = `${ratio}%`;
-
-      renderCategoryTable(sortedExp, totalExp);
-      renderAnalyticsDoughnut(sortedExp);
-      renderAnalyticsMonthly(txs);
+      renderCharts(txs, deptSpend);
+      renderTeamTable(teamAnalyticsRes.data || {});
     }
 
-    function renderCategoryTable(sortedExp, totalExp) {
-      const tbody = document.getElementById('categoryBreakdownBody');
-      tbody.innerHTML = '';
+    function renderCharts(txs, deptSpend) {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const palette = ['#6366f1', '#06b6d4', '#ec4899', '#f97316', '#8b5cf6', '#10b981', '#f59e0b'];
 
-      if (sortedExp.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);">No operating expense records found</td></tr>';
+      // 1. Department Doughnut
+      const deptLabels = Object.keys(deptSpend);
+      const deptValues = Object.values(deptSpend);
+
+      const deptCtx = document.getElementById('deptSpendChart')?.getContext('2d');
+      if (deptCtx) {
+        if (deptChartInstance) deptChartInstance.destroy();
+        deptChartInstance = new Chart(deptCtx, {
+          type: 'doughnut',
+          data: {
+            labels: deptLabels.length > 0 ? deptLabels : ['No Expenses'],
+            datasets: [{
+              data: deptValues.length > 0 ? deptValues : [1],
+              backgroundColor: deptValues.length > 0 ? palette.slice(0, deptLabels.length) : ['#e2e8f0'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, color: textColor, font: { size: 11 } } }
+            }
+          }
+        });
+      }
+
+      // 2. Category Doughnut
+      const catMap = {};
+      txs.filter(t => t.type === 'expense').forEach(t => {
+        catMap[t.category] = (catMap[t.category] || 0) + Number(t.amount);
+      });
+
+      const catLabels = Object.keys(catMap);
+      const catValues = Object.values(catMap);
+
+      const catCtx = document.getElementById('categoryChart')?.getContext('2d');
+      if (catCtx) {
+        if (catChartInstance) catChartInstance.destroy();
+        catChartInstance = new Chart(catCtx, {
+          type: 'pie',
+          data: {
+            labels: catLabels.length > 0 ? catLabels : ['No Expenses'],
+            datasets: [{
+              data: catValues.length > 0 ? catValues : [1],
+              backgroundColor: catValues.length > 0 ? palette.slice(0, catLabels.length) : ['#e2e8f0'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, color: textColor, font: { size: 11 } } }
+            }
+          }
+        });
+      }
+    }
+
+    function renderTeamTable(data) {
+      const tbody = document.getElementById('teamAnalyticsTableBody');
+      if (!tbody) return;
+
+      const userStats = data.by_user || [];
+      if (userStats.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No team member activity recorded yet.</td></tr>`;
         return;
       }
 
-      sortedExp.forEach(([catName, data]) => {
-        const pct = totalExp > 0 ? ((data.amount / totalExp) * 100).toFixed(1) : 0;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${escapeHtml(catName)}</strong></td>
-          <td>${data.count} transaction${data.count === 1 ? '' : 's'}</td>
-          <td>
-            <div style="display:flex; align-items:center; gap:0.65rem;">
-              <div style="flex:1; height:6px; background:var(--border-color); border-radius:999px; overflow:hidden;">
-                <div style="width:${pct}%; height:100%; background:var(--corporate-blue);"></div>
+      tbody.innerHTML = userStats.map(u => {
+        const initials = getInitials(u.user_name || 'Staff');
+        const color = u.avatar_color || '#8b5cf6';
+
+        return `
+          <tr>
+            <td>
+              <div class="user-tag">
+                <span class="user-mini-avatar" style="background-color: ${color};">${initials}</span>
+                <span style="font-weight: 700;">${escapeHtml(u.user_name)}</span>
               </div>
-              <span style="font-size:0.75rem; font-weight:700;">${pct}%</span>
-            </div>
-          </td>
-          <td class="text-right" style="font-weight:700; color:var(--expense);">${formatCurrency(data.amount)}</td>
+            </td>
+            <td><span class="dept-pill">${escapeHtml(u.department)}</span></td>
+            <td style="color: var(--income); font-weight: 700;">${formatCurrency(u.total_revenue || 0)}</td>
+            <td style="color: var(--expense); font-weight: 700;">${formatCurrency(u.total_spent || 0)}</td>
+            <td>${u.tx_count} transactions</td>
+          </tr>
         `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function renderAnalyticsDoughnut(sortedExp) {
-      const labels = sortedExp.map((e) => e[0]);
-      const data = sortedExp.map((e) => e[1].amount);
-      const bgColors = ['#2563eb', '#6366f1', '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#eab308', '#ef4444', '#14b8a6', '#64748b'];
-
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const textColor = isDark ? '#f8fafc' : '#0f172a';
-
-      const ctx = document.getElementById('analyticsDoughnut').getContext('2d');
-      if (doughnutChart) doughnutChart.destroy();
-
-      doughnutChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 2, borderColor: isDark ? '#111827' : '#ffffff' }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '60%',
-          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, color: textColor, font: { size: 10 } } } }
-        }
-      });
-    }
-
-    function renderAnalyticsMonthly(txs) {
-      const monthly = {};
-      txs.forEach((t) => {
-        if (!t.date) return;
-        const key = t.date.slice(0, 7);
-        if (!monthly[key]) monthly[key] = { rev: 0, exp: 0 };
-        if (t.type === 'income') monthly[key].rev += Number(t.amount);
-        else monthly[key].exp += Number(t.amount);
-      });
-
-      const keys = Object.keys(monthly).sort();
-      const labels = keys.map((k) => {
-        const [y, m] = k.split('-');
-        return new Date(y, parseInt(m, 10) - 1, 1).toLocaleDateString('en-IN', { month: 'short' });
-      });
-
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const textColor = isDark ? '#94a3b8' : '#64748b';
-      const gridColor = isDark ? '#334155' : '#e2e8f0';
-
-      const ctx = document.getElementById('analyticsMonthlyTrend').getContext('2d');
-      if (monthlyTrendChart) monthlyTrendChart.destroy();
-
-      monthlyTrendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Revenue Flow', data: keys.map((k) => monthly[k].rev), borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', fill: true, tension: 0.3 },
-            { label: 'Cost Outflow', data: keys.map((k) => monthly[k].exp), borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.1)', fill: true, tension: 0.3 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { grid: { display: false }, ticks: { color: textColor } },
-            y: { grid: { color: gridColor }, ticks: { color: textColor, callback: (v) => '₹' + (v >= 1000 ? v / 1000 + 'k' : v) } }
-          },
-          plugins: { legend: { position: 'top', labels: { color: textColor } } }
-        }
-      });
-    }
-
-    function onThemeChanged() {
-      fetchTransactions().then((txs) => renderAnalytics(txs));
+      }).join('');
     }
   </script>
 </body>

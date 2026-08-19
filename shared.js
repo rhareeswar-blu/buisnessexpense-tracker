@@ -1,15 +1,24 @@
 /**
  * ==============================================================================
- * Apex Business Finance — Shared Client Engine
- * Robust Backend SQLite Synchronization, LocalStorage Fallback, Theme & Nav
+ * Apex Business Finance — Enterprise Multi-User Shared Client Engine
+ * Robust SQLite Sync, Multi-User Session State, Policy Controls & UI Injection
  * ==============================================================================
  */
 
 const API_BASE = window.location.origin.includes('5000') ? '' : 'http://localhost:5000';
-const STORAGE_KEY_TRANSACTIONS = 'rupeewise_transactions_v1';
-const STORAGE_KEY_THEME = 'rupeewise_theme_v1';
-const STORAGE_KEY_AUDIT = 'rupeewise_audit_logs_v1';
-const STORAGE_KEY_PROFILE = 'rupeewise_profile_v1';
+const STORAGE_KEY_TRANSACTIONS = 'apex_transactions_v2';
+const STORAGE_KEY_THEME = 'apex_theme_v2';
+const STORAGE_KEY_ACTIVE_USER = 'apex_active_user_v2';
+const STORAGE_KEY_PROFILE = 'apex_profile_v2';
+const STORAGE_KEY_POLICY = 'apex_policy_v2';
+
+const DEFAULT_TEAM_USERS = [
+  { id: 'usr_1', name: 'Elena Rostova', email: 'elena.rostova@apexsolutions.com', role: 'Finance Director (Admin)', department: 'Management', avatar_color: '#8b5cf6' },
+  { id: 'usr_2', name: 'Alex Rivera', email: 'alex.rivera@apexsolutions.com', role: 'Enterprise Sales Lead', department: 'Sales', avatar_color: '#3b82f6' },
+  { id: 'usr_3', name: 'Priya Sharma', email: 'priya.sharma@apexsolutions.com', role: 'Principal Cloud Architect', department: 'Engineering', avatar_color: '#10b981' },
+  { id: 'usr_4', name: 'Marcus Vance', email: 'marcus.vance@apexsolutions.com', role: 'Marketing Director', department: 'Marketing', avatar_color: '#ec4899' },
+  { id: 'usr_5', name: 'Sophia Chen', email: 'sophia.chen@apexsolutions.com', role: 'Operations Specialist', department: 'Operations', avatar_color: '#f59e0b' }
+];
 
 const BUSINESS_CATEGORIES = {
   expense: [
@@ -34,25 +43,9 @@ const BUSINESS_CATEGORIES = {
   ]
 };
 
-const DEFAULT_SAMPLE_DATA = [
-  { id: 'tx_b_1', description: 'Client Retainer — Enterprise Cloud Migration', amount: 185000, type: 'income', category: 'Client Invoices & Retainers', date: getRelativeDate(2) },
-  { id: 'tx_b_2', description: 'Monthly Office Lease & Co-working Space', amount: 45000, type: 'expense', category: 'Office Rent & Facilities', date: getRelativeDate(3) },
-  { id: 'tx_b_3', description: 'Core Engineering & Design Team Payroll', amount: 95000, type: 'expense', category: 'Salaries & Payroll', date: getRelativeDate(5) },
-  { id: 'tx_b_4', description: 'SaaS Consulting & Custom API Integration', amount: 68000, type: 'income', category: 'Consulting & Services', date: getRelativeDate(7) },
-  { id: 'tx_b_5', description: 'AWS Cloud Infrastructure & Server Hosting', amount: 12400, type: 'expense', category: 'Cloud & Software Tools', date: getRelativeDate(9) },
-  { id: 'tx_b_6', description: 'Digital Marketing Campaign & Google Ads', amount: 16500, type: 'expense', category: 'Marketing & Advertising', date: getRelativeDate(12) },
-  { id: 'tx_b_7', description: 'Quarterly High-Yield Corporate Deposit', amount: 8500, type: 'income', category: 'Investments & Returns', date: getRelativeDate(14) },
-  { id: 'tx_b_8', description: 'Office Gigabit Internet & Power Utilities', amount: 4800, type: 'expense', category: 'Utilities & Internet', date: getRelativeDate(16) }
-];
-
-function getRelativeDate(daysAgo) {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().split('T')[0];
-}
-
 let isBackendLive = false;
-let backendCheckPromise = null;
+let currentTeamUsers = [...DEFAULT_TEAM_USERS];
+let currentActiveUser = DEFAULT_TEAM_USERS[0];
 
 // ------------------------------------------------------------------------------
 // Global Initialization
@@ -62,35 +55,231 @@ document.addEventListener('DOMContentLoaded', async () => {
   highlightActiveNav();
   setupSidebarToggle();
   await checkBackendHealth();
+  await loadTeamUsers();
+  initUserSession();
   await loadGlobalBusinessProfile();
 });
+
+// ------------------------------------------------------------------------------
+// User Session & Switcher
+// ------------------------------------------------------------------------------
+async function loadTeamUsers() {
+  try {
+    const res = await fetch(`${API_BASE}/api/users`, { signal: AbortSignal.timeout(2000) });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
+        currentTeamUsers = json.data;
+      }
+    }
+  } catch (e) {
+    // Keep default roster
+  }
+}
+
+function initUserSession() {
+  const savedUserId = localStorage.getItem(STORAGE_KEY_ACTIVE_USER);
+  if (savedUserId) {
+    const found = currentTeamUsers.find(u => u.id === savedUserId);
+    if (found) currentActiveUser = found;
+  }
+  updateUserUI();
+  injectUserSwitcher();
+}
+
+function getActiveUser() {
+  return currentActiveUser;
+}
+
+function setActiveUser(userId) {
+  const user = currentTeamUsers.find(u => u.id === userId);
+  if (user) {
+    currentActiveUser = user;
+    localStorage.setItem(STORAGE_KEY_ACTIVE_USER, user.id);
+    updateUserUI();
+    showToast(`Switched active profile to ${user.name} (${user.department})`, 'info');
+    if (typeof onActiveUserChanged === 'function') {
+      onActiveUserChanged(user);
+    }
+  }
+}
+
+function updateUserUI() {
+  // Update sidebar user widget
+  const sidebarAvatar = document.querySelector('.sidebar-user .user-avatar');
+  const sidebarName = document.querySelector('.sidebar-user .user-name');
+  const sidebarRole = document.querySelector('.sidebar-user .user-role');
+
+  if (sidebarAvatar) {
+    sidebarAvatar.textContent = getInitials(currentActiveUser.name);
+    sidebarAvatar.style.backgroundColor = currentActiveUser.avatar_color || '#8b5cf6';
+  }
+  if (sidebarName) sidebarName.textContent = currentActiveUser.name;
+  if (sidebarRole) sidebarRole.textContent = `${currentActiveUser.role} • ${currentActiveUser.department}`;
+
+  // Update topbar button text if present
+  const topbarName = document.getElementById('activeUserBtnName');
+  const topbarAvatar = document.getElementById('activeUserBtnAvatar');
+  if (topbarName) topbarName.textContent = currentActiveUser.name.split(' ')[0];
+  if (topbarAvatar) {
+    topbarAvatar.textContent = getInitials(currentActiveUser.name);
+    topbarAvatar.style.backgroundColor = currentActiveUser.avatar_color || '#8b5cf6';
+  }
+}
+
+function injectUserSwitcher() {
+  const actionsContainer = document.querySelector('.topbar-actions');
+  if (!actionsContainer || document.getElementById('userSwitcherWrap')) return;
+
+  const switcher = document.createElement('div');
+  switcher.className = 'user-switcher-wrap';
+  switcher.id = 'userSwitcherWrap';
+
+  switcher.innerHTML = `
+    <button class="user-switcher-btn" id="userSwitcherBtn" title="Switch Team Member Account" aria-label="Switch User">
+      <span class="user-badge-avatar" id="activeUserBtnAvatar" style="background-color: ${currentActiveUser.avatar_color || '#8b5cf6'}">
+        ${getInitials(currentActiveUser.name)}
+      </span>
+      <span id="activeUserBtnName">${escapeHtml(currentActiveUser.name.split(' ')[0])}</span>
+      <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; color: var(--text-muted);"></i>
+    </button>
+    <div class="user-switcher-menu" id="userSwitcherMenu">
+      <div class="user-menu-header">Active Team Member</div>
+      <div id="userSwitcherOptions"></div>
+    </div>
+  `;
+
+  // Insert before theme toggle
+  const themeToggle = document.getElementById('themeToggleBtn');
+  if (themeToggle) {
+    actionsContainer.insertBefore(switcher, themeToggle);
+  } else {
+    actionsContainer.prepend(switcher);
+  }
+
+  // Populate options
+  renderUserSwitcherOptions();
+
+  // Toggle handler
+  const btn = document.getElementById('userSwitcherBtn');
+  const menu = document.getElementById('userSwitcherMenu');
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('show');
+  });
+
+  document.addEventListener('click', () => {
+    menu.classList.remove('show');
+  });
+}
+
+function renderUserSwitcherOptions() {
+  const container = document.getElementById('userSwitcherOptions');
+  if (!container) return;
+
+  container.innerHTML = currentTeamUsers.map(u => `
+    <button class="user-option ${u.id === currentActiveUser.id ? 'active' : ''}" onclick="setActiveUser('${u.id}')">
+      <span class="user-badge-avatar" style="background-color: ${u.avatar_color || '#6366f1'}">
+        ${getInitials(u.name)}
+      </span>
+      <div class="user-option-info">
+        <span class="user-option-name">${escapeHtml(u.name)}</span>
+        <span class="user-option-role">${escapeHtml(u.role)} • ${escapeHtml(u.department)}</span>
+      </div>
+    </button>
+  `).join('');
+}
+
+function getInitials(name) {
+  if (!name) return 'U';
+  const parts = name.trim().split(' ');
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+// ------------------------------------------------------------------------------
+// Policy & Purge Controls
+// ------------------------------------------------------------------------------
+async function fetchPolicy() {
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/policy`, { signal: AbortSignal.timeout(1800) });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.status === 'success') {
+        localStorage.setItem(STORAGE_KEY_POLICY, JSON.stringify(json.data));
+        return json.data;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY_POLICY);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+
+  return { immutable_policy_enabled: true };
+}
+
+async function togglePolicy() {
+  const active = getActiveUser();
+  const res = await fetch(`${API_BASE}/api/admin/policy/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-User-Name': active.name },
+    body: JSON.stringify({ operator_user: active.name })
+  });
+  const json = await res.json();
+  if (json.status === 'success') {
+    localStorage.setItem(STORAGE_KEY_POLICY, JSON.stringify(json.data));
+    return json.data;
+  }
+  throw new Error(json.message || 'Failed to toggle policy');
+}
+
+async function permanentPurgeTransaction(txId) {
+  const active = getActiveUser();
+  const res = await fetch(`${API_BASE}/api/admin/purge/${txId}`, {
+    method: 'DELETE',
+    headers: { 'X-User-Name': active.name }
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json.message || 'Purge failed');
+  }
+  return json;
+}
+
+async function permanentPurgeAll() {
+  const active = getActiveUser();
+  const res = await fetch(`${API_BASE}/api/admin/purge-all`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-User-Name': active.name },
+    body: JSON.stringify({ operator_user: active.name })
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json.message || 'Purge all failed');
+  }
+  return json;
+}
 
 // ------------------------------------------------------------------------------
 // Backend Health Check
 // ------------------------------------------------------------------------------
 async function checkBackendHealth() {
-  if (backendCheckPromise) return backendCheckPromise;
-
-  backendCheckPromise = (async () => {
-    const badge = document.getElementById('backendStatusBadge');
-    const badgeText = document.getElementById('backendStatusText');
-
-    try {
-      const res = await fetch(`${API_BASE}/api/health`, { method: 'GET', signal: AbortSignal.timeout(1500) });
-      if (res.ok) {
-        isBackendLive = true;
-        updateBackendBadge(true);
-        return true;
-      }
-    } catch (err) {
-      isBackendLive = false;
+  try {
+    const res = await fetch(`${API_BASE}/api/health`, { method: 'GET', signal: AbortSignal.timeout(1500) });
+    if (res.ok) {
+      isBackendLive = true;
+      updateBackendBadge(true);
+      return true;
     }
+  } catch (err) {
+    isBackendLive = false;
+  }
 
-    updateBackendBadge(false);
-    return false;
-  })();
-
-  return backendCheckPromise;
+  updateBackendBadge(false);
+  return false;
 }
 
 function updateBackendBadge(online) {
@@ -100,20 +289,25 @@ function updateBackendBadge(online) {
 
   if (online) {
     badge.className = 'backend-badge connected';
-    badgeText.textContent = 'SQLite Database Active';
+    badgeText.textContent = 'SQLite Active (WAL)';
   } else {
     badge.className = 'backend-badge local-mode';
-    badgeText.textContent = 'LocalStorage Mode';
+    badgeText.textContent = 'Offline Mode';
   }
 }
 
 // ------------------------------------------------------------------------------
-// Load Transactions (Direct API Query with Seamless Fallback)
+// Transaction Data Operations
 // ------------------------------------------------------------------------------
-async function fetchTransactions() {
-  // Try direct API call first
+async function fetchTransactions(filters = {}) {
   try {
-    const res = await fetch(`${API_BASE}/api/transactions`, { signal: AbortSignal.timeout(1800) });
+    let url = `${API_BASE}/api/transactions`;
+    const params = new URLSearchParams();
+    if (filters.user_id) params.append('user_id', filters.user_id);
+    if (filters.department) params.append('department', filters.department);
+    if ([...params.keys()].length > 0) url += `?${params.toString()}`;
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
     if (res.ok) {
       const json = await res.json();
       if (json.status === 'success') {
@@ -127,7 +321,6 @@ async function fetchTransactions() {
     updateBackendBadge(false);
   }
 
-  // Fallback to LocalStorage
   return getLocalTransactions();
 }
 
@@ -138,20 +331,25 @@ function getLocalTransactions() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-    // Seed default sample data if completely empty in offline mode
-    localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(DEFAULT_SAMPLE_DATA));
-    return [...DEFAULT_SAMPLE_DATA];
-  } catch (e) {
-    return [...DEFAULT_SAMPLE_DATA];
-  }
+  } catch (e) {}
+  return [];
 }
 
 async function saveTransactionRecord(tx) {
+  const active = getActiveUser();
+  const payload = {
+    ...tx,
+    user_id: tx.user_id || active.id,
+    user_name: tx.user_name || active.name,
+    department: tx.department || active.department,
+    avatar_color: tx.avatar_color || active.avatar_color
+  };
+
   try {
     const res = await fetch(`${API_BASE}/api/transactions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tx),
+      headers: { 'Content-Type': 'application/json', 'X-User-Name': active.name },
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(2000)
     });
     if (res.ok) {
@@ -165,15 +363,17 @@ async function saveTransactionRecord(tx) {
   }
 
   const list = getLocalTransactions();
-  list.unshift(tx);
+  list.unshift(payload);
   localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(list));
   return true;
 }
 
 async function deleteTransactionRecord(id) {
+  const active = getActiveUser();
   try {
     const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
       method: 'DELETE',
+      headers: { 'X-User-Name': active.name },
       signal: AbortSignal.timeout(2000)
     });
     if (res.ok) {
@@ -193,7 +393,7 @@ async function deleteTransactionRecord(id) {
 }
 
 // ------------------------------------------------------------------------------
-// Business Profile Loader & Sync
+// Business Profile
 // ------------------------------------------------------------------------------
 async function loadGlobalBusinessProfile() {
   let profile = {
@@ -223,12 +423,10 @@ async function loadGlobalBusinessProfile() {
 }
 
 function applyProfileToUI(p) {
-  // Update sidebar
   document.querySelectorAll('.sidebar-company-name').forEach((el) => {
     el.textContent = p.company_name;
   });
 
-  // Update Statement heading & metadata if present
   const stmtHeading = document.getElementById('stmtCompanyHeading');
   if (stmtHeading) stmtHeading.textContent = p.company_name;
 
@@ -241,16 +439,6 @@ function applyProfileToUI(p) {
     const fy = p.financial_year ? p.financial_year : '2026-2027';
     stmtTaxMeta.textContent = `${tax} • Financial Year: ${fy}`;
   }
-
-  const stmtCompanyTaxId = document.getElementById('stmtCompanyTaxId');
-  if (stmtCompanyTaxId) {
-    const tax = p.tax_id ? p.tax_id : 'Tax ID: Registered';
-    const fy = p.financial_year ? p.financial_year : '2026-2027';
-    stmtCompanyTaxId.textContent = `${tax} • Financial Year: ${fy}`;
-  }
-
-  const headerCompanyName = document.getElementById('headerCompanyName');
-  if (headerCompanyName) headerCompanyName.textContent = p.company_name;
 }
 
 // ------------------------------------------------------------------------------
@@ -308,7 +496,7 @@ function initTheme() {
 }
 
 // ------------------------------------------------------------------------------
-// Formatters & UI Utilities
+// UI Utilities
 // ------------------------------------------------------------------------------
 function formatCurrency(amount) {
   return new Intl.NumberFormat('en-IN', {

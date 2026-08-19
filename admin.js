@@ -1,121 +1,473 @@
 /**
  * ==============================================================================
- * Admin Portal Controller — Financial Statement Generator & Audit Ledger
+ * Apex Business Finance — Executive Admin Command Center Controller
+ * Security Policy Management, Permanent Purge, Team Roster & Master Audit Engine
  * ==============================================================================
  */
 
-const API_BASE = window.location.origin.includes('5000') ? '' : 'http://localhost:5000';
-
-let allAuditLogs = [];
+let currentPolicy = { immutable_policy_enabled: true };
+let currentAuditLogs = [];
+let currentArchivedTxs = [];
+let currentRoster = [];
 let currentStatementData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  initTheme();
-  setupNavigation();
-  setupEventListeners();
-
-  await loadBusinessProfile();
-  await loadKPIs();
-  await generateFinancialStatement('this-month');
-  await loadAuditLedger();
-  await loadDeletedArchive();
+  setupAdminTabs();
+  setupAdminEventListeners();
+  await refreshAdminDashboard();
 });
 
-// ------------------------------------------------------------------------------
-// Theme Setup
-// ------------------------------------------------------------------------------
-function initTheme() {
-  const saved = localStorage.getItem('rupeewise_theme_v1') || 'light';
-  document.documentElement.setAttribute('data-theme', saved);
-}
-
-function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme') || 'light';
-  const next = cur === 'light' ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('rupeewise_theme_v1', next);
+async function refreshAdminDashboard() {
+  await Promise.all([
+    loadAdminKPIs(),
+    loadSecurityPolicy(),
+    loadArchivedTransactions(),
+    loadTeamRoster(),
+    loadMasterAuditLogs(),
+    generateStatement('this-month')
+  ]);
 }
 
 // ------------------------------------------------------------------------------
-// Navigation Tabs
+// Tabs & Layout
 // ------------------------------------------------------------------------------
-function setupNavigation() {
-  const tabs = document.querySelectorAll('.nav-tab');
-  const panels = document.querySelectorAll('.admin-view-panel');
+function setupAdminTabs() {
+  const tabs = document.querySelectorAll('.admin-tab-btn');
+  const panels = document.querySelectorAll('.admin-panel');
 
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       tabs.forEach((t) => t.classList.remove('active'));
-      panels.forEach((p) => (p.style.display = 'none'));
+      panels.forEach((p) => p.classList.remove('active'));
 
       tab.classList.add('active');
-      const viewId = tab.getAttribute('data-view');
-      const targetPanel = document.getElementById(viewId);
-      if (targetPanel) targetPanel.style.display = 'flex';
+      const targetId = tab.getAttribute('data-tab');
+      const targetPanel = document.getElementById(targetId);
+      if (targetPanel) targetPanel.classList.add('active');
     });
   });
 }
 
 // ------------------------------------------------------------------------------
-// Business Profile & KPIs
+// Event Listeners & Modals
 // ------------------------------------------------------------------------------
-async function loadBusinessProfile() {
-  try {
-    const res = await fetch(`${API_BASE}/api/business-profile`);
-    const json = await res.json();
-    if (json.status === 'success') {
-      const p = json.data;
-      document.getElementById('headerCompanyName').textContent = p.company_name;
-      document.getElementById('stmtCompanyName').textContent = p.company_name;
-      document.getElementById('stmtCompanyTaxId').textContent = `${p.tax_id || 'Tax ID: Registered'} • FY: ${p.financial_year || '2026-2027'}`;
-      document.getElementById('settingCompanyName').value = p.company_name;
-      document.getElementById('settingTaxId').value = p.tax_id || '';
+function setupAdminEventListeners() {
+  document.getElementById('refreshAdminBtn')?.addEventListener('click', async () => {
+    await refreshAdminDashboard();
+    showToast('Admin data synchronized with SQLite', 'success');
+  });
+
+  // Policy Toggle
+  document.getElementById('togglePolicyBtn')?.addEventListener('click', () => {
+    const isEnforced = currentPolicy.immutable_policy_enabled;
+    const msg = isEnforced
+      ? '⚠️ WARNING: Disabling the Immutable Policy will allow administrators to PERMANENTLY PURGE and destroy deleted transactions from the database. Are you sure you want to permit permanent deletion?'
+      : 'Enabling the Immutable Policy will strictly prevent all permanent deletions and enforce soft-deletes and full audit retention.';
+
+    document.getElementById('policyModalMessage').innerHTML = msg;
+    document.getElementById('policyWarningModal').classList.add('active');
+  });
+
+  document.getElementById('cancelPolicyModalBtn')?.addEventListener('click', () => {
+    document.getElementById('policyWarningModal').classList.remove('active');
+  });
+
+  document.getElementById('closePolicyModalBtn')?.addEventListener('click', () => {
+    document.getElementById('policyWarningModal').classList.remove('active');
+  });
+
+  document.getElementById('confirmPolicyToggleBtn')?.addEventListener('click', async () => {
+    document.getElementById('policyWarningModal').classList.remove('active');
+    try {
+      const res = await togglePolicy();
+      currentPolicy = res;
+      applyPolicyToUI(res.immutable_policy_enabled);
+      await loadArchivedTransactions();
+      await loadMasterAuditLogs();
+      showToast(res.message, 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
     }
-  } catch (e) {
-    console.warn('Backend not available, using default profile');
+  });
+
+  // Empty Trash (Bulk Purge)
+  document.getElementById('emptyTrashBtn')?.addEventListener('click', async () => {
+    if (currentPolicy.immutable_policy_enabled) {
+      showToast('Action blocked: Immutable Policy is active.', 'error');
+      return;
+    }
+
+    if (!confirm('🚨 PERMANENT ACTION: Are you sure you want to permanently purge all archived records from the database? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const res = await permanentPurgeAll();
+      showToast(res.message, 'success');
+      await loadArchivedTransactions();
+      await loadMasterAuditLogs();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  });
+
+  // Add User Modal
+  const addUserModal = document.getElementById('addUserModal');
+  document.getElementById('openAddUserModalBtn')?.addEventListener('click', () => {
+    addUserModal.classList.add('active');
+  });
+  document.getElementById('closeAddUserModalBtn')?.addEventListener('click', () => {
+    addUserModal.classList.remove('active');
+  });
+  document.getElementById('cancelAddUserBtn')?.addEventListener('click', () => {
+    addUserModal.classList.remove('active');
+  });
+
+  document.getElementById('addUserForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('newUserName').value.trim();
+    const email = document.getElementById('newUserEmail').value.trim();
+    const role = document.getElementById('newUserRole').value.trim();
+    const dept = document.getElementById('newUserDept').value;
+    const color = document.getElementById('newUserColor').value;
+
+    try {
+      const active = getActiveUser();
+      const res = await fetch(`${API_BASE}/api/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Name': active.name },
+        body: JSON.stringify({ name, email, role, department: dept, avatar_color: color })
+      });
+      const json = await res.json();
+      if (res.ok) {
+        showToast(`Team member "${name}" added.`, 'success');
+        addUserModal.classList.remove('active');
+        document.getElementById('addUserForm').reset();
+        await loadTeamUsers();
+        await loadTeamRoster();
+      } else {
+        showToast(json.message || 'Failed to add user', 'error');
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Statement Preset
+  document.getElementById('stmtPeriodPreset')?.addEventListener('change', (e) => {
+    const customDiv = document.getElementById('stmtCustomDates');
+    if (e.target.value === 'custom') {
+      customDiv.style.display = 'flex';
+    } else {
+      customDiv.style.display = 'none';
+      generateStatement(e.target.value);
+    }
+  });
+
+  document.getElementById('generateStmtBtn')?.addEventListener('click', () => {
+    const preset = document.getElementById('stmtPeriodPreset').value;
+    generateStatement(preset);
+  });
+
+  document.getElementById('printStatementBtn')?.addEventListener('click', () => {
+    window.print();
+  });
+
+  document.getElementById('exportStatementCsvBtn')?.addEventListener('click', exportStatementCSV);
+
+  // Search Audit Logs
+  document.getElementById('auditSearchInput')?.addEventListener('input', (e) => {
+    filterAuditLogs(e.target.value);
+  });
+
+  // Company Profile Form
+  document.getElementById('adminProfileForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const company_name = document.getElementById('settingCompanyName').value.trim();
+    const tax_id = document.getElementById('settingTaxId').value.trim();
+    const financial_year = document.getElementById('settingFY').value.trim();
+    const active = getActiveUser();
+
+    try {
+      const res = await fetch(`${API_BASE}/api/business-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-User-Name': active.name },
+        body: JSON.stringify({ company_name, tax_id, financial_year, operator_user: active.name })
+      });
+      if (res.ok) {
+        showToast('Company profile settings saved.', 'success');
+        await loadGlobalBusinessProfile();
+      }
+    } catch (err) {
+      showToast('Error saving profile', 'error');
+    }
+  });
+
+  // Sample Data & Reset Buttons
+  document.getElementById('seedDataBtn')?.addEventListener('click', async () => {
+    if (confirm('Reload demo transactions into SQLite?')) {
+      await fetch(`${API_BASE}/api/sample-data`, { method: 'POST' });
+      showToast('Sample dataset reloaded', 'success');
+      await refreshAdminDashboard();
+    }
+  });
+
+  document.getElementById('resetDataBtn')?.addEventListener('click', async () => {
+    if (confirm('Archive all active records to trash?')) {
+      await fetch(`${API_BASE}/api/reset`, { method: 'POST' });
+      showToast('All active records archived to trash', 'info');
+      await refreshAdminDashboard();
+    }
+  });
+}
+
+// ------------------------------------------------------------------------------
+// KPIs
+// ------------------------------------------------------------------------------
+async function loadAdminKPIs() {
+  const txs = await fetchTransactions();
+  let rev = 0;
+  let exp = 0;
+  let revCount = 0;
+  let expCount = 0;
+
+  txs.forEach((t) => {
+    if (t.type === 'income') {
+      rev += Number(t.amount);
+      revCount++;
+    } else {
+      exp += Number(t.amount);
+      expCount++;
+    }
+  });
+
+  const net = rev - exp;
+  const margin = rev > 0 ? Math.round((net / rev) * 100) : 0;
+
+  document.getElementById('kpiRevenue').textContent = formatCurrency(rev);
+  document.getElementById('kpiExpense').textContent = formatCurrency(exp);
+  document.getElementById('kpiNetProfit').textContent = formatCurrency(net);
+  document.getElementById('kpiIncomeCount').textContent = `${revCount} revenue transactions`;
+  document.getElementById('kpiExpenseCount').textContent = `${expCount} expense records`;
+  document.getElementById('kpiMargin').textContent = `Operating Margin: ${margin}%`;
+}
+
+// ------------------------------------------------------------------------------
+// Policy Center
+// ------------------------------------------------------------------------------
+async function loadSecurityPolicy() {
+  currentPolicy = await fetchPolicy();
+  applyPolicyToUI(currentPolicy.immutable_policy_enabled);
+}
+
+function applyPolicyToUI(isEnabled) {
+  const heroCard = document.getElementById('policyHeroCard');
+  const badge = document.getElementById('policyStatusBadge');
+  const icon = document.getElementById('policyShieldIcon');
+  const toggleBtnText = document.getElementById('policyToggleBtnText');
+  const kpiText = document.getElementById('kpiPolicyText');
+  const kpiSub = document.getElementById('kpiPolicySub');
+  const kpiIcon = document.getElementById('kpiPolicyIcon');
+  const emptyTrashBtn = document.getElementById('emptyTrashBtn');
+
+  if (isEnabled) {
+    heroCard.className = 'policy-card-hero locked';
+    badge.textContent = 'ACTIVE (STRICT IMMUTABILITY)';
+    badge.style.color = '#059669';
+    icon.innerHTML = '<i class="fa-solid fa-lock"></i>';
+    toggleBtnText.textContent = 'Disable Immutable Policy (Allow Purge)';
+    kpiText.textContent = 'IMMUTABLE';
+    kpiText.style.color = '#059669';
+    kpiSub.textContent = 'Soft-Deletes Enforced';
+    kpiIcon.innerHTML = '<i class="fa-solid fa-lock" style="color: #059669;"></i>';
+    if (emptyTrashBtn) emptyTrashBtn.style.display = 'none';
+  } else {
+    heroCard.className = 'policy-card-hero unlocked';
+    badge.textContent = 'DISABLED (PURGE PERMITTED)';
+    badge.style.color = '#d97706';
+    icon.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i>';
+    toggleBtnText.textContent = 'Enable Immutable Policy (Strict Audit)';
+    kpiText.textContent = 'PURGE ENABLED';
+    kpiText.style.color = '#d97706';
+    kpiSub.textContent = 'Permanent Deletion Permitted';
+    kpiIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i>';
+    if (emptyTrashBtn) emptyTrashBtn.style.display = 'inline-flex';
   }
 }
 
-async function loadKPIs() {
+// ------------------------------------------------------------------------------
+// Archived Trash Ledger
+// ------------------------------------------------------------------------------
+async function loadArchivedTransactions() {
+  const tbody = document.getElementById('archivedTableBody');
+  if (!tbody) return;
+
   try {
-    const res = await fetch(`${API_BASE}/api/transactions`);
+    const res = await fetch(`${API_BASE}/api/admin/deleted`);
     const json = await res.json();
-    if (json.status === 'success') {
-      const txs = json.data;
-      let rev = 0;
-      let exp = 0;
-      let revCount = 0;
-      let expCount = 0;
+    currentArchivedTxs = json.data || [];
 
-      txs.forEach((t) => {
-        if (t.type === 'income') {
-          rev += Number(t.amount);
-          revCount++;
-        } else {
-          exp += Number(t.amount);
-          expCount++;
-        }
-      });
+    if (currentArchivedTxs.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <i class="fa-solid fa-box-open" style="font-size: 2rem; margin-bottom: 0.75rem; display: block; opacity: 0.5;"></i>
+            No archived or soft-deleted transactions found.
+          </td>
+        </tr>
+      `;
+      return;
+    }
 
-      const net = rev - exp;
-      const margin = rev > 0 ? Math.round((net / rev) * 100) : 0;
+    tbody.innerHTML = currentArchivedTxs.map(t => {
+      const isIncome = t.type === 'income';
+      const initials = getInitials(t.user_name || 'Staff');
+      const avatarColor = t.avatar_color || '#8b5cf6';
+      const isPolicyLocked = currentPolicy.immutable_policy_enabled;
 
-      document.getElementById('kpiRevenue').textContent = formatINR(rev);
-      document.getElementById('kpiExpense').textContent = formatINR(exp);
-      document.getElementById('kpiNetProfit').textContent = formatINR(net);
-      document.getElementById('kpiIncomeCount').textContent = `${revCount} revenue streams`;
-      document.getElementById('kpiExpenseCount').textContent = `${expCount} expense records`;
-      document.getElementById('kpiMargin').textContent = `Operating Margin: ${margin}%`;
+      return `
+        <tr>
+          <td>
+            <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(t.description)}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(t.category)}</div>
+          </td>
+          <td>
+            <div class="user-tag">
+              <span class="user-mini-avatar" style="background-color: ${avatarColor};">${initials}</span>
+              <span>${escapeHtml(t.user_name || 'Elena Rostova')}</span>
+            </div>
+          </td>
+          <td>
+            <span class="dept-pill">${escapeHtml(t.department || 'Management')}</span>
+          </td>
+          <td>
+            <span class="badge-amount ${isIncome ? 'income' : 'expense'}">
+              ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
+            </span>
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-muted);">
+            ${t.deleted_at || 'Recently'}
+          </td>
+          <td>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); background: var(--bg-card-subtle); padding: 0.2rem 0.5rem; border-radius: 4px;">
+              ${escapeHtml(t.deleted_reason || 'Deleted by user')}
+            </span>
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            <button class="btn btn-secondary btn-sm" onclick="handleRestore('${t.id}')" title="Restore back to active ledger">
+              <i class="fa-solid fa-rotate-left"></i> Restore
+            </button>
+            ${!isPolicyLocked ? `
+              <button class="btn btn-danger-outline btn-sm" onclick="handlePurge('${t.id}')" title="Permanently delete from database">
+                <i class="fa-solid fa-trash-can"></i> Purge
+              </button>
+            ` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--expense);">Error loading archive: ${e.message}</td></tr>`;
+  }
+}
+
+async function handleRestore(txId) {
+  const active = getActiveUser();
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/restore/${txId}`, {
+      method: 'POST',
+      headers: { 'X-User-Name': active.name }
+    });
+    const json = await res.json();
+    if (res.ok) {
+      showToast(json.message, 'success');
+      await loadArchivedTransactions();
+      await loadAdminKPIs();
+      await loadMasterAuditLogs();
     }
   } catch (e) {
-    console.warn('KPI load error:', e);
+    showToast(e.message, 'error');
+  }
+}
+
+async function handlePurge(txId) {
+  if (!confirm('Are you sure you want to permanently delete this record from the database?')) return;
+  try {
+    const res = await permanentPurgeTransaction(txId);
+    showToast(res.message, 'success');
+    await loadArchivedTransactions();
+    await loadMasterAuditLogs();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+// ------------------------------------------------------------------------------
+// Team Roster
+// ------------------------------------------------------------------------------
+async function loadTeamRoster() {
+  const tbody = document.getElementById('teamTableBody');
+  if (!tbody) return;
+
+  try {
+    const [usersRes, analyticsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/users`),
+      fetch(`${API_BASE}/api/admin/team-analytics`)
+    ]);
+
+    const usersJson = await usersRes.json();
+    const analyticsJson = await analyticsRes.json();
+
+    const users = usersJson.data || [];
+    const spendingMap = {};
+
+    if (analyticsJson.data && analyticsJson.data.by_user) {
+      analyticsJson.data.by_user.forEach(u => {
+        spendingMap[u.user_id] = u;
+      });
+    }
+
+    currentRoster = users;
+
+    tbody.innerHTML = users.map(u => {
+      const stats = spendingMap[u.id] || { tx_count: 0, total_spent: 0 };
+      const initials = getInitials(u.name);
+
+      return `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="avatar-badge-lg" style="background-color: ${u.avatar_color || '#6366f1'};">${initials}</span>
+              <div>
+                <div style="font-weight: 700; color: var(--text-primary);">${escapeHtml(u.name)}</div>
+                <div style="font-size: 0.725rem; color: var(--text-muted);">ID: ${escapeHtml(u.id)}</div>
+              </div>
+            </div>
+          </td>
+          <td style="color: var(--text-secondary);">${escapeHtml(u.email || 'N/A')}</td>
+          <td><span style="font-weight: 600;">${escapeHtml(u.role)}</span></td>
+          <td><span class="dept-pill">${escapeHtml(u.department)}</span></td>
+          <td>${stats.tx_count} transactions</td>
+          <td style="font-weight: 700; font-family: var(--font-heading); color: var(--expense);">
+            ${formatCurrency(stats.total_spent)}
+          </td>
+          <td>
+            <span style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 700; color: #10b981;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #10b981;"></span> Active
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--expense);">Error loading team roster</td></tr>`;
   }
 }
 
 // ------------------------------------------------------------------------------
 // Statement Generator
 // ------------------------------------------------------------------------------
-async function generateFinancialStatement(preset) {
+async function generateStatement(preset) {
   let startDate = '';
   let endDate = '';
   const now = new Date();
@@ -125,349 +477,167 @@ async function generateFinancialStatement(preset) {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     startDate = `${year}-${month}-01`;
     endDate = new Date(year, now.getMonth() + 1, 0).toISOString().split('T')[0];
-    document.getElementById('stmtPeriodText').textContent = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    document.getElementById('stmtDocPeriod').textContent = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   } else if (preset === 'last-month') {
-    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const year = lastMonthDate.getFullYear();
-    const month = String(lastMonthDate.getMonth() + 1).padStart(2, '0');
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const year = lastMonth.getFullYear();
+    const month = String(lastMonth.getMonth() + 1).padStart(2, '0');
     startDate = `${year}-${month}-01`;
-    endDate = new Date(year, lastMonthDate.getMonth() + 1, 0).toISOString().split('T')[0];
-    document.getElementById('stmtPeriodText').textContent = lastMonthDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    endDate = new Date(year, lastMonth.getMonth() + 1, 0).toISOString().split('T')[0];
+    document.getElementById('stmtDocPeriod').textContent = lastMonth.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   } else if (preset === 'this-quarter') {
     const qMonth = Math.floor(now.getMonth() / 3) * 3;
     startDate = new Date(now.getFullYear(), qMonth, 1).toISOString().split('T')[0];
     endDate = new Date(now.getFullYear(), qMonth + 3, 0).toISOString().split('T')[0];
-    document.getElementById('stmtPeriodText').textContent = `Q${Math.floor(now.getMonth() / 3) + 1} (${startDate} to ${endDate})`;
+    document.getElementById('stmtDocPeriod').textContent = `Q${Math.floor(now.getMonth() / 3) + 1} (${startDate} to ${endDate})`;
   } else if (preset === 'custom') {
     startDate = document.getElementById('stmtStartDate').value;
     endDate = document.getElementById('stmtEndDate').value;
-    document.getElementById('stmtPeriodText').textContent = `${startDate || 'Start'} to ${endDate || 'Present'}`;
+    document.getElementById('stmtDocPeriod').textContent = `${startDate || 'Start'} to ${endDate || 'Present'}`;
   } else {
-    document.getElementById('stmtPeriodText').textContent = 'All-Time Financial History';
+    document.getElementById('stmtDocPeriod').textContent = 'All-Time Financial History';
   }
 
-  document.getElementById('stmtGeneratedDate').textContent = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  document.getElementById('stmtDocGeneratedAt').textContent = `Generated: ${now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
   try {
     let url = `${API_BASE}/api/admin/statement`;
-    const params = [];
-    if (startDate) params.push(`start_date=${startDate}`);
-    if (endDate) params.push(`end_date=${endDate}`);
-    if (params.length) url += `?${params.join('&')}`;
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if ([...params.keys()].length > 0) url += `?${params.toString()}`;
 
     const res = await fetch(url);
     const json = await res.json();
     if (json.status === 'success') {
-      currentStatementData = json.data;
-      renderStatementDocument(json.data);
+      const data = json.data;
+      currentStatementData = data;
+
+      document.getElementById('stmtSheetRevenue').textContent = formatCurrency(data.summary.total_revenue);
+      document.getElementById('stmtSheetExpense').textContent = formatCurrency(data.summary.total_expense);
+      document.getElementById('stmtSheetNetProfit').textContent = formatCurrency(data.summary.net_profit);
+      document.getElementById('stmtSheetMargin').textContent = `${data.summary.profit_margin_percent}%`;
+
+      const revBox = document.getElementById('stmtRevenueRows');
+      const expBox = document.getElementById('stmtExpenseRows');
+
+      const revEntries = Object.entries(data.revenue_breakdown || {});
+      revBox.innerHTML = revEntries.length > 0
+        ? revEntries.map(([cat, amt]) => `
+          <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;">
+            <span>${escapeHtml(cat)}</span>
+            <strong style="color: #059669;">${formatCurrency(amt)}</strong>
+          </div>
+        `).join('')
+        : '<p style="color: #64748b; font-size: 0.85rem;">No revenue recorded</p>';
+
+      const expEntries = Object.entries(data.expense_breakdown || {});
+      expBox.innerHTML = expEntries.length > 0
+        ? expEntries.map(([cat, amt]) => `
+          <div style="display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;">
+            <span>${escapeHtml(cat)}</span>
+            <strong style="color: #e11d48;">${formatCurrency(amt)}</strong>
+          </div>
+        `).join('')
+        : '<p style="color: #64748b; font-size: 0.85rem;">No expenses recorded</p>';
     }
   } catch (e) {
-    showAdminToast('Failed to fetch statement from server.', 'error');
+    console.warn('Statement generate error:', e);
   }
 }
 
-function renderStatementDocument(stmt) {
-  const sum = stmt.summary;
-
-  document.getElementById('stmtGrossRevenue').textContent = formatINR(sum.total_revenue);
-  document.getElementById('stmtTotalExpenses').textContent = formatINR(sum.total_expense);
-  document.getElementById('stmtNetProfit').textContent = formatINR(sum.net_profit);
-  document.getElementById('stmtProfitMargin').textContent = `${sum.profit_margin_percent}%`;
-
-  // Render Revenue Rows
-  const revTbody = document.getElementById('stmtRevenueRows');
-  revTbody.innerHTML = '';
-  const revEntries = Object.entries(stmt.revenue_breakdown);
-  if (revEntries.length === 0) {
-    revTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">No revenue recorded</td></tr>';
-  } else {
-    revEntries.forEach(([cat, amt]) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td><strong>${escapeHtml(cat)}</strong></td><td class="text-right">${formatINR(amt)}</td>`;
-      revTbody.appendChild(tr);
-    });
-  }
-
-  // Render Expense Rows
-  const expTbody = document.getElementById('stmtExpenseRows');
-  expTbody.innerHTML = '';
-  const expEntries = Object.entries(stmt.expense_breakdown);
-  if (expEntries.length === 0) {
-    expTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#94a3b8;">No expenses recorded</td></tr>';
-  } else {
-    expEntries.forEach(([cat, amt]) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td><strong>${escapeHtml(cat)}</strong></td><td class="text-right">${formatINR(amt)}</td>`;
-      expTbody.appendChild(tr);
-    });
-  }
-
-  // Render Full Ledger
-  const ledgerTbody = document.getElementById('stmtLedgerRows');
-  ledgerTbody.innerHTML = '';
-  if (stmt.transactions.length === 0) {
-    ledgerTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">No transactions found in period</td></tr>';
-  } else {
-    stmt.transactions.forEach((tx) => {
-      const tr = document.createElement('tr');
-      const isInc = tx.type === 'income';
-      tr.innerHTML = `
-        <td>${escapeHtml(tx.date)}</td>
-        <td><strong>${escapeHtml(tx.description)}</strong></td>
-        <td>${escapeHtml(tx.category)}</td>
-        <td><span class="badge-action ${isInc ? 'CREATE' : 'DELETE'}">${tx.type.toUpperCase()}</span></td>
-        <td class="text-right" style="color: ${isInc ? '#059669' : '#dc2626'}; font-weight:700;">
-          ${isInc ? '+' : '-'}${formatINR(tx.amount)}
-        </td>
-      `;
-      ledgerTbody.appendChild(tr);
-    });
-  }
-}
-
-// ------------------------------------------------------------------------------
-// Audit & Change Ledger
-// ------------------------------------------------------------------------------
-async function loadAuditLedger() {
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/audit-logs`);
-    const json = await res.json();
-    if (json.status === 'success') {
-      allAuditLogs = json.data;
-      document.getElementById('kpiAuditCount').textContent = `${allAuditLogs.length} Logs`;
-      renderAuditTable('ALL');
-    }
-  } catch (e) {
-    console.warn('Audit ledger fetch error:', e);
-  }
-}
-
-function renderAuditTable(filterAction) {
-  const tbody = document.getElementById('auditLedgerTableBody');
-  tbody.innerHTML = '';
-
-  const logs = filterAction === 'ALL'
-    ? allAuditLogs
-    : allAuditLogs.filter((l) => l.action === filterAction);
-
-  if (logs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color:#94a3b8;">No audit records found</td></tr>';
-    return;
-  }
-
-  logs.forEach((l) => {
-    const tr = document.createElement('tr');
-    const d = l.details || {};
-    const desc = d.description || (l.action === 'RESET' ? 'Full Data Reset' : 'System Action');
-    const cat = d.category || '—';
-    const amt = d.amount ? formatINR(d.amount) : '—';
-
-    tr.innerHTML = `
-      <td style="white-space:nowrap; font-size:0.8rem; color:#94a3b8;">${escapeHtml(l.timestamp || '')}</td>
-      <td><span class="badge-action ${l.action}">${escapeHtml(l.action)}</span></td>
-      <td style="font-family:monospace; font-size:0.75rem; color:#64748b;">${escapeHtml(l.transaction_id || 'SYSTEM')}</td>
-      <td><strong>${escapeHtml(desc)}</strong></td>
-      <td>${escapeHtml(cat)}</td>
-      <td class="text-right" style="font-weight:700;">${amt}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// ------------------------------------------------------------------------------
-// Archived / Deleted Transactions
-// ------------------------------------------------------------------------------
-async function loadDeletedArchive() {
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/deleted`);
-    const json = await res.json();
-    if (json.status === 'success') {
-      const deletedTxs = json.data;
-      document.getElementById('kpiDeletedCount').textContent = `${deletedTxs.length} archived items`;
-      renderDeletedTable(deletedTxs);
-    }
-  } catch (e) {
-    console.warn('Deleted archive fetch error:', e);
-  }
-}
-
-function renderDeletedTable(txs) {
-  const tbody = document.getElementById('deletedArchiveTableBody');
-  tbody.innerHTML = '';
-
-  if (txs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2.5rem; color:#94a3b8;">No deleted transactions. All records are active.</td></tr>';
-    return;
-  }
-
-  txs.forEach((t) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="color:#ef4444; font-weight:600; font-size:0.8rem;">${escapeHtml(t.deleted_at || 'Recently')}</td>
-      <td>${escapeHtml(t.date)}</td>
-      <td><strong>${escapeHtml(t.description)}</strong></td>
-      <td>${escapeHtml(t.category)}</td>
-      <td><span class="badge-action ${t.type === 'income' ? 'CREATE' : 'DELETE'}">${t.type.toUpperCase()}</span></td>
-      <td class="text-right" style="font-weight:700;">${formatINR(t.amount)}</td>
-      <td class="text-center">
-        <button class="btn-restore-table" data-id="${t.id}">
-          <i class="fa-solid fa-rotate-left"></i> Restore
-        </button>
-      </td>
-    `;
-
-    tr.querySelector('.btn-restore-table').addEventListener('click', async () => {
-      await restoreTransaction(t.id, t.description);
-    });
-
-    tbody.appendChild(tr);
-  });
-}
-
-async function restoreTransaction(id, name) {
-  try {
-    const res = await fetch(`${API_BASE}/api/admin/restore/${id}`, { method: 'POST' });
-    if (res.ok) {
-      showAdminToast(`Successfully restored "${name}" to active records.`, 'success');
-      await loadKPIs();
-      await loadDeletedArchive();
-      await loadAuditLedger();
-      await generateFinancialStatement('this-month');
-    }
-  } catch (e) {
-    showAdminToast('Failed to restore transaction.', 'error');
-  }
-}
-
-// ------------------------------------------------------------------------------
-// Export CSV Statement
-// ------------------------------------------------------------------------------
 function exportStatementCSV() {
-  if (!currentStatementData || !currentStatementData.transactions.length) {
-    showAdminToast('No statement data to export.', 'info');
+  if (!currentStatementData || !currentStatementData.transactions) {
+    showToast('No statement data to export', 'error');
     return;
   }
 
   const txs = currentStatementData.transactions;
-  const headers = ['Transaction ID', 'Date', 'Type', 'Category', 'Description', 'Amount (INR)'];
-  const rows = txs.map((t) => [
+  const headers = ['Transaction ID', 'Date', 'Description', 'Type', 'Category', 'User', 'Department', 'Amount (INR)'];
+  const rows = txs.map(t => [
     `"${t.id}"`,
     `"${t.date}"`,
-    `"${t.type.toUpperCase()}"`,
-    `"${t.category}"`,
     `"${t.description.replace(/"/g, '""')}"`,
+    `"${t.type}"`,
+    `"${t.category}"`,
+    `"${t.user_name || 'Staff'}"`,
+    `"${t.department || 'General'}"`,
     t.amount
   ]);
 
-  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-  const link = document.createElement('a');
-  link.setAttribute('href', encodeURI(csvContent));
-  link.setAttribute('download', `Financial_Statement_${new Date().toISOString().slice(0, 10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  showAdminToast('Statement exported to CSV successfully.', 'success');
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Financial_Statement_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ------------------------------------------------------------------------------
-// Toast & Helpers
+// Master Audit Ledger
 // ------------------------------------------------------------------------------
-function showAdminToast(msg, type = 'info') {
-  const container = document.getElementById('adminToastContainer');
-  const toast = document.createElement('div');
-  toast.style.cssText = `
-    padding: 0.85rem 1.25rem;
-    background: #1e293b;
-    color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    border-left: 4px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-    font-size: 0.875rem;
-    font-weight: 500;
-  `;
-  toast.textContent = msg;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3200);
+async function loadMasterAuditLogs() {
+  const tbody = document.getElementById('auditTableBody');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/audit-logs`);
+    const json = await res.json();
+    currentAuditLogs = json.data || [];
+    renderAuditLogs(currentAuditLogs);
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--expense);">Error loading audit ledger</td></tr>`;
+  }
 }
 
-function formatINR(val) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2
-  }).format(Number(val) || 0);
+function renderAuditLogs(logs) {
+  const tbody = document.getElementById('auditTableBody');
+  if (!tbody) return;
+
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">No audit logs recorded.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = logs.map(l => {
+    let actionBadgeColor = 'var(--primary)';
+    if (l.action === 'CREATE') actionBadgeColor = '#059669';
+    else if (l.action === 'DELETE') actionBadgeColor = '#e11d48';
+    else if (l.action === 'RESTORE') actionBadgeColor = '#8b5cf6';
+    else if (l.action === 'PERMANENT_PURGE' || l.action === 'PERMANENT_PURGE_ALL') actionBadgeColor = '#dc2626';
+    else if (l.action === 'POLICY_TOGGLE') actionBadgeColor = '#f59e0b';
+
+    return `
+      <tr>
+        <td style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono, monospace);">${l.timestamp}</td>
+        <td>
+          <span style="font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(0,0,0,0.05); color: ${actionBadgeColor}; border: 1px solid ${actionBadgeColor};">
+            ${escapeHtml(l.action)}
+          </span>
+        </td>
+        <td style="font-weight: 600; font-size: 0.825rem;">${escapeHtml(l.user_name || 'Executive Admin')}</td>
+        <td style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(l.transaction_id || 'System')}</td>
+        <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 400px; word-break: break-word;">
+          ${escapeHtml(JSON.stringify(l.details))}
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
-function escapeHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML;
-}
-
-// ------------------------------------------------------------------------------
-// Event Listeners
-// ------------------------------------------------------------------------------
-function setupEventListeners() {
-  document.getElementById('adminThemeToggle').addEventListener('click', toggleTheme);
-
-  document.getElementById('refreshAdminBtn').addEventListener('click', async () => {
-    await loadKPIs();
-    await loadAuditLedger();
-    await loadDeletedArchive();
-    await generateFinancialStatement(document.getElementById('periodPreset').value);
-    showAdminToast('Admin data refreshed from SQLite database.', 'success');
-  });
-
-  const periodPreset = document.getElementById('periodPreset');
-  const customFields = document.getElementById('customDateRange');
-
-  periodPreset.addEventListener('change', () => {
-    if (periodPreset.value === 'custom') {
-      customFields.style.display = 'flex';
-    } else {
-      customFields.style.display = 'none';
-      generateFinancialStatement(periodPreset.value);
-    }
-  });
-
-  document.getElementById('generateStmtBtn').addEventListener('click', () => {
-    generateFinancialStatement(periodPreset.value);
-  });
-
-  document.getElementById('printStmtBtn').addEventListener('click', () => {
-    window.print();
-  });
-
-  document.getElementById('exportStmtCsvBtn').addEventListener('click', exportStatementCSV);
-
-  // Audit filter pills
-  document.querySelectorAll('.audit-filter-pill').forEach((pill) => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('.audit-filter-pill').forEach((p) => p.classList.remove('active'));
-      pill.classList.add('active');
-      renderAuditTable(pill.getAttribute('data-action'));
-    });
-  });
-
-  // Business profile form
-  document.getElementById('businessProfileForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const company_name = document.getElementById('settingCompanyName').value.trim();
-    const tax_id = document.getElementById('settingTaxId').value.trim();
-
-    try {
-      const res = await fetch(`${API_BASE}/api/business-profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_name, tax_id })
-      });
-      if (res.ok) {
-        showAdminToast('Business profile updated successfully.', 'success');
-        await loadBusinessProfile();
-      }
-    } catch (err) {
-      showAdminToast('Error updating business profile.', 'error');
-    }
-  });
+function filterAuditLogs(query) {
+  if (!query) {
+    renderAuditLogs(currentAuditLogs);
+    return;
+  }
+  const q = query.toLowerCase();
+  const filtered = currentAuditLogs.filter(l =>
+    l.action.toLowerCase().includes(q) ||
+    (l.user_name && l.user_name.toLowerCase().includes(q)) ||
+    (l.transaction_id && l.transaction_id.toLowerCase().includes(q)) ||
+    JSON.stringify(l.details).toLowerCase().includes(q)
+  );
+  renderAuditLogs(filtered);
 }

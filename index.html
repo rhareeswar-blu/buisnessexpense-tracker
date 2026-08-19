@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Apex Business Finance — Executive Financial Dashboard" />
+  <meta name="description" content="Apex Business Finance — Multi-User Financial Dashboard & Team Expense Hub" />
   <title>Dashboard — Apex Business Finance</title>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
@@ -17,7 +17,7 @@
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Shared & Dashboard Styles -->
+  <!-- Shared Styles -->
   <link rel="stylesheet" href="shared.css" />
 </head>
 <body>
@@ -46,10 +46,10 @@
       </a>
       <a href="analytics.html" class="nav-link">
         <i class="fa-solid fa-chart-column"></i>
-        <span>Analytics & Costs</span>
+        <span>Analytics &amp; Costs</span>
       </a>
 
-      <span class="nav-section-title">Executive & Audit</span>
+      <span class="nav-section-title">Reports &amp; Tools</span>
       <a href="statements.html" class="nav-link">
         <i class="fa-solid fa-file-invoice-dollar"></i>
         <span>Financial Statement</span>
@@ -66,14 +66,20 @@
         <i class="fa-solid fa-sliders"></i>
         <span>Settings</span>
       </a>
+
+      <span class="nav-section-title">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Admin Command Hub</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Executive Admin</span>
-          <span class="user-role">Finance Controller</span>
+          <span class="user-name">Elena Rostova</span>
+          <span class="user-role">Finance Director • Management</span>
         </div>
       </div>
     </div>
@@ -90,11 +96,16 @@
         </button>
         <div class="page-heading">
           <h1 class="page-title">Executive Dashboard</h1>
-          <span class="page-breadcrumb">Apex Business Finance / Executive Overview</span>
+          <span class="page-breadcrumb">Apex Business Finance / Multi-User Financial Center</span>
         </div>
       </div>
 
       <div class="topbar-actions">
+        <a href="admin.html" class="admin-hub-link" title="Open Dedicated Executive Admin Portal">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin Portal</span>
+        </a>
+
         <span class="backend-badge" id="backendStatusBadge">
           <span class="status-dot"></span>
           <span id="backendStatusText">Checking storage...</span>
@@ -107,287 +118,445 @@
       </div>
     </header>
 
-    <!-- Page Body -->
-    <div class="page-body">
+    <!-- Content Body -->
+    <div class="app-content-body">
       
-      <!-- KPI Cards Ribbon -->
+      <!-- Executive KPI Cards -->
       <section class="kpi-grid" aria-label="Key Performance Indicators">
-        <div class="kpi-card">
-          <div class="kpi-top">
+        <div class="kpi-card revenue">
+          <div class="kpi-header">
             <span class="kpi-label">Gross Revenue</span>
-            <div class="kpi-icon-wrap kpi-revenue">
-              <i class="fa-solid fa-arrow-trend-up"></i>
-            </div>
+            <div class="kpi-icon-bubble income"><i class="fa-solid fa-arrow-trend-up"></i></div>
           </div>
-          <div class="kpi-val" id="dashGrossRevenue">₹0.00</div>
-          <span class="kpi-sub" id="dashRevenueCount">0 revenue streams</span>
+          <div class="kpi-value" id="kpiRevenue">₹0.00</div>
+          <div class="kpi-footer" id="kpiIncomeCount">0 revenue transactions</div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-top">
+        <div class="kpi-card expense">
+          <div class="kpi-header">
             <span class="kpi-label">Operating Expenses</span>
-            <div class="kpi-icon-wrap kpi-expense">
-              <i class="fa-solid fa-arrow-trend-down"></i>
-            </div>
+            <div class="kpi-icon-bubble expense"><i class="fa-solid fa-arrow-trend-down"></i></div>
           </div>
-          <div class="kpi-val" id="dashTotalExpense">₹0.00</div>
-          <span class="kpi-sub" id="dashExpenseCount">0 cost entries</span>
+          <div class="kpi-value" id="kpiExpense">₹0.00</div>
+          <div class="kpi-footer" id="kpiExpenseCount">0 expense entries</div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-top">
+        <div class="kpi-card profit">
+          <div class="kpi-header">
             <span class="kpi-label">Net Operating Profit</span>
-            <div class="kpi-icon-wrap kpi-profit">
-              <i class="fa-solid fa-indian-rupee-sign"></i>
-            </div>
+            <div class="kpi-icon-bubble profit"><i class="fa-solid fa-chart-line"></i></div>
           </div>
-          <div class="kpi-val" id="dashNetProfit">₹0.00</div>
-          <span class="kpi-sub" id="dashProfitStatus">Net Positive</span>
+          <div class="kpi-value" id="kpiNetProfit">₹0.00</div>
+          <div class="kpi-footer" id="kpiMargin">Margin: 0%</div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-top">
-            <span class="kpi-label">Operating Margin</span>
-            <div class="kpi-icon-wrap kpi-margin">
-              <i class="fa-solid fa-percent"></i>
-            </div>
+        <div class="kpi-card policy">
+          <div class="kpi-header">
+            <span class="kpi-label">Active Team Member</span>
+            <div class="kpi-icon-bubble policy"><i class="fa-solid fa-users"></i></div>
           </div>
-          <div class="kpi-val" id="dashMargin">0%</div>
-          <span class="kpi-sub" id="dashMonthCost">This month costs: ₹0.00</span>
+          <div class="kpi-value" id="kpiActiveUserName" style="font-size: 1.35rem;">Elena Rostova</div>
+          <div class="kpi-footer" id="kpiActiveUserDept">Department: Management</div>
         </div>
       </section>
 
-      <!-- Charts Section (Grid: 1fr 1.2fr) -->
-      <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 1.5rem;" class="dash-charts-grid">
+      <!-- Charts Row -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;" class="charts-grid-row">
         
-        <!-- Doughnut Chart: Cost Breakdown -->
-        <div class="card">
-          <div class="card-header">
+        <!-- Monthly Financial Trends -->
+        <div class="content-card">
+          <div class="content-card-header">
             <div class="card-title-group">
-              <i class="fa-solid fa-chart-pie" style="color: var(--corporate-blue);"></i>
-              <h2 class="card-title">Cost Breakdown</h2>
+              <h3 class="card-title">Cash Flow &amp; Monthly Trajectory</h3>
+              <p class="card-subtitle">Revenue vs Operating Expense comparison</p>
             </div>
-            <a href="analytics.html" class="btn btn-secondary btn-sm">Full Analytics</a>
           </div>
-          <div style="height: 260px; position: relative;">
-            <canvas id="costDoughnutChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Bar Chart: Monthly Revenue vs Costs -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <i class="fa-solid fa-chart-column" style="color: var(--corporate-blue);"></i>
-              <h2 class="card-title">Monthly Revenue vs Costs</h2>
-            </div>
-            <a href="statements.html" class="btn btn-secondary btn-sm">Generate P&amp;L</a>
-          </div>
-          <div style="height: 260px; position: relative;">
+          <div class="content-card-body" style="height: 320px; position: relative;">
             <canvas id="monthlyTrendChart"></canvas>
           </div>
         </div>
 
-      </div>
-
-      <!-- Recent Transactions Table -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Recent Transactions</h2>
-            <p class="card-subtitle">Latest records registered in corporate ledger</p>
+        <!-- Expense Category Breakdown -->
+        <div class="content-card">
+          <div class="content-card-header">
+            <div class="card-title-group">
+              <h3 class="card-title">Cost Distribution</h3>
+              <p class="card-subtitle">Spending by category share</p>
+            </div>
           </div>
-          <div style="display: flex; gap: 0.5rem;">
-            <a href="transactions.html" class="btn btn-primary btn-sm">
-              <i class="fa-solid fa-plus"></i> Record Transaction
-            </a>
-            <a href="transactions.html" class="btn btn-secondary btn-sm">
-              View All Ledger
-            </a>
+          <div class="content-card-body" style="height: 320px; position: relative;">
+            <canvas id="categoryDoughnutChart"></canvas>
           </div>
         </div>
 
-        <div class="table-responsive">
-          <table class="corporate-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Type</th>
-                <th class="text-right">Amount (INR)</th>
-              </tr>
-            </thead>
-            <tbody id="recentTransactionsBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+      </div>
+
+      <!-- Recent Transactions Ledger with Multi-User Attributions -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Recent Transactions &amp; Team Submissions</h3>
+            <p class="card-subtitle">Latest corporate revenue and expenditure records</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            <a href="transactions.html" class="btn btn-outline btn-sm">
+              <i class="fa-solid fa-list-ul"></i> View All
+            </a>
+            <button class="btn btn-primary btn-sm" id="openNewTxModalBtn">
+              <i class="fa-solid fa-plus"></i> Record Expense
+            </button>
+          </div>
+        </div>
+        <div class="content-card-body" style="padding: 0;">
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Submitted By</th>
+                  <th>Department</th>
+                  <th>Category</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="recentTransactionsTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading recent transactions...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
     </div>
-
   </div>
 
-  <!-- Shared Engine Script -->
-  <script src="shared.js"></script>
+  <!-- Record Transaction Modal -->
+  <div class="modal-backdrop" id="txModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Transaction</h3>
+        <button class="modal-close-btn" id="closeTxModalBtn">&times;</button>
+      </div>
+      <form id="addTxForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="txType">Transaction Type:</label>
+            <select id="txType" class="form-select" required>
+              <option value="expense" selected>Corporate Expense (Cost)</option>
+              <option value="income">Business Revenue (Income)</option>
+            </select>
+          </div>
 
-  <!-- Dashboard Specific Controller -->
+          <div class="form-group">
+            <label class="form-label" for="txDescription">Description / Vendor:</label>
+            <input type="text" id="txDescription" class="form-input" placeholder="e.g. AWS Cloud Infrastructure Billing" required />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="txAmount">Amount (₹):</label>
+              <input type="number" id="txAmount" class="form-input" placeholder="0.00" step="0.01" min="0.01" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="txDate">Date:</label>
+              <input type="date" id="txDate" class="form-input" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="txCategory">Category:</label>
+            <select id="txCategory" class="form-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="txSubmitter">Submitting Team Member:</label>
+            <select id="txSubmitter" class="form-select"></select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelTxBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shared JS & Dashboard Controller -->
+  <script src="shared.js"></script>
   <script>
-    let doughnutInstance = null;
-    let trendInstance = null;
+    let trendChartInstance = null;
+    let doughnutChartInstance = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-      const txs = await fetchTransactions();
-      renderDashboard(txs);
+      document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+      setupCategoryOptions();
+      setupSubmitterOptions();
+      setupDashboardModals();
+      await loadDashboardData();
     });
 
-    function renderDashboard(txs) {
+    function onActiveUserChanged(user) {
+      document.getElementById('kpiActiveUserName').textContent = user.name;
+      document.getElementById('kpiActiveUserDept').textContent = `Department: ${user.department}`;
+      setupSubmitterOptions();
+    }
+
+    function setupSubmitterOptions() {
+      const select = document.getElementById('txSubmitter');
+      if (!select) return;
+      const active = getActiveUser();
+      select.innerHTML = currentTeamUsers.map(u => `
+        <option value="${u.id}" ${u.id === active.id ? 'selected' : ''}>
+          ${escapeHtml(u.name)} (${escapeHtml(u.department)} • ${escapeHtml(u.role)})
+        </option>
+      `).join('');
+    }
+
+    function setupCategoryOptions() {
+      const typeSelect = document.getElementById('txType');
+      const catSelect = document.getElementById('txCategory');
+
+      function populate() {
+        const type = typeSelect.value;
+        const list = BUSINESS_CATEGORIES[type] || [];
+        catSelect.innerHTML = list.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');
+      }
+
+      typeSelect.addEventListener('change', populate);
+      populate();
+    }
+
+    function setupDashboardModals() {
+      const modal = document.getElementById('txModal');
+      document.getElementById('openNewTxModalBtn')?.addEventListener('click', () => {
+        setupSubmitterOptions();
+        modal.classList.add('active');
+      });
+      document.getElementById('closeTxModalBtn')?.addEventListener('click', () => modal.classList.remove('active'));
+      document.getElementById('cancelTxBtn')?.addEventListener('click', () => modal.classList.remove('active'));
+
+      document.getElementById('addTxForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const desc = document.getElementById('txDescription').value.trim();
+        const amount = parseFloat(document.getElementById('txAmount').value);
+        const type = document.getElementById('txType').value;
+        const category = document.getElementById('txCategory').value;
+        const date = document.getElementById('txDate').value;
+        const submitterId = document.getElementById('txSubmitter').value;
+
+        const assignedUser = currentTeamUsers.find(u => u.id === submitterId) || getActiveUser();
+
+        const newTx = {
+          description: desc,
+          amount: amount,
+          type: type,
+          category: category,
+          date: date,
+          user_id: assignedUser.id,
+          user_name: assignedUser.name,
+          department: assignedUser.department,
+          avatar_color: assignedUser.avatar_color
+        };
+
+        const success = await saveTransactionRecord(newTx);
+        if (success) {
+          showToast(`Transaction added under ${assignedUser.name}`, 'success');
+          modal.classList.remove('active');
+          document.getElementById('addTxForm').reset();
+          document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+          await loadDashboardData();
+        } else {
+          showToast('Failed to record transaction', 'error');
+        }
+      });
+    }
+
+    async function loadDashboardData() {
+      const txs = await fetchTransactions();
+      const active = getActiveUser();
+
+      document.getElementById('kpiActiveUserName').textContent = active.name;
+      document.getElementById('kpiActiveUserDept').textContent = `Department: ${active.department}`;
+
       let rev = 0;
       let exp = 0;
       let revCount = 0;
       let expCount = 0;
-      const currentMonthKey = new Date().toISOString().slice(0, 7);
-      let thisMonthCost = 0;
 
       txs.forEach((t) => {
-        const amt = Number(t.amount);
         if (t.type === 'income') {
-          rev += amt;
+          rev += Number(t.amount);
           revCount++;
         } else {
-          exp += amt;
+          exp += Number(t.amount);
           expCount++;
-          if (t.date && t.date.startsWith(currentMonthKey)) {
-            thisMonthCost += amt;
-          }
         }
       });
 
       const net = rev - exp;
       const margin = rev > 0 ? Math.round((net / rev) * 100) : 0;
 
-      document.getElementById('dashGrossRevenue').textContent = formatCurrency(rev);
-      document.getElementById('dashTotalExpense').textContent = formatCurrency(exp);
-      document.getElementById('dashNetProfit').textContent = formatCurrency(net);
-      document.getElementById('dashMargin').textContent = `${margin}%`;
+      document.getElementById('kpiRevenue').textContent = formatCurrency(rev);
+      document.getElementById('kpiExpense').textContent = formatCurrency(exp);
+      document.getElementById('kpiNetProfit').textContent = formatCurrency(net);
+      document.getElementById('kpiIncomeCount').textContent = `${revCount} revenue transactions`;
+      document.getElementById('kpiExpenseCount').textContent = `${expCount} cost entries`;
+      document.getElementById('kpiMargin').textContent = `Operating Margin: ${margin}%`;
 
-      document.getElementById('dashRevenueCount').textContent = `${revCount} revenue streams`;
-      document.getElementById('dashExpenseCount').textContent = `${expCount} expense records`;
-      document.getElementById('dashMonthCost').textContent = `This month costs: ${formatCurrency(thisMonthCost)}`;
-      document.getElementById('dashProfitStatus').textContent = net >= 0 ? 'Operating Profit' : 'Operating Deficit';
-
-      renderRecentTable(txs.slice(0, 6));
-      renderDoughnutChart(txs.filter((t) => t.type === 'expense'));
-      renderTrendChart(txs);
+      renderRecentTable(txs.slice(0, 7));
+      renderCharts(txs);
     }
 
-    function renderRecentTable(recentTxs) {
-      const tbody = document.getElementById('recentTransactionsBody');
-      tbody.innerHTML = '';
+    function renderRecentTable(txs) {
+      const tbody = document.getElementById('recentTransactionsTableBody');
+      if (!tbody) return;
 
-      if (recentTxs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-muted);">No recent transactions recorded</td></tr>';
+      if (txs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">No transactions recorded yet. Click "Record Expense" to begin.</td></tr>`;
         return;
       }
 
-      recentTxs.forEach((t) => {
-        const isInc = t.type === 'income';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${formatDate(t.date)}</td>
-          <td><strong>${escapeHtml(t.description)}</strong></td>
-          <td><span class="badge badge-audit">${escapeHtml(t.category)}</span></td>
-          <td><span class="badge ${isInc ? 'badge-income' : 'badge-expense'}">${t.type.toUpperCase()}</span></td>
-          <td class="text-right" style="font-weight:700; color:${isInc ? 'var(--income)' : 'var(--expense)'};">
-            ${isInc ? '+' : '-'}${formatCurrency(t.amount)}
-          </td>
+      tbody.innerHTML = txs.map(t => {
+        const isIncome = t.type === 'income';
+        const initials = getInitials(t.user_name || 'Staff');
+        const color = t.avatar_color || '#8b5cf6';
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(t.description)}</div>
+            </td>
+            <td>
+              <div class="user-tag">
+                <span class="user-mini-avatar" style="background-color: ${color};">${initials}</span>
+                <span>${escapeHtml(t.user_name || 'Elena Rostova')}</span>
+              </div>
+            </td>
+            <td><span class="dept-pill">${escapeHtml(t.department || 'General')}</span></td>
+            <td style="color: var(--text-secondary);">${escapeHtml(t.category)}</td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">${formatDate(t.date)}</td>
+            <td>
+              <span class="badge-amount ${isIncome ? 'income' : 'expense'}">
+                ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button class="btn btn-outline btn-sm" onclick="handleDeleteTx('${t.id}')" title="Archive to trash">
+                <i class="fa-solid fa-trash-can" style="color: var(--expense);"></i>
+              </button>
+            </td>
+          </tr>
         `;
-        tbody.appendChild(tr);
-      });
+      }).join('');
     }
 
-    function renderDoughnutChart(expenses) {
-      const catTotals = {};
-      expenses.forEach((t) => {
-        catTotals[t.category] = (catTotals[t.category] || 0) + Number(t.amount);
-      });
-
-      const labels = Object.keys(catTotals);
-      const data = Object.values(catTotals);
-      const bgColors = ['#2563eb', '#6366f1', '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#eab308', '#ef4444', '#14b8a6', '#64748b'];
-
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const textColor = isDark ? '#f8fafc' : '#0f172a';
-
-      const ctx = document.getElementById('costDoughnutChart').getContext('2d');
-      if (doughnutInstance) doughnutInstance.destroy();
-
-      doughnutInstance = new Chart(ctx, {
-        type: 'doughnut',
-        data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 2, borderColor: isDark ? '#111827' : '#ffffff' }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '65%',
-          plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, color: textColor, font: { size: 10, family: "'Inter', sans-serif" } } }
-          }
-        }
-      });
+    async function handleDeleteTx(id) {
+      if (!confirm('Archive this transaction to Trash?')) return;
+      const success = await deleteTransactionRecord(id);
+      if (success) {
+        showToast('Transaction archived to Trash', 'info');
+        await loadDashboardData();
+      }
     }
 
-    function renderTrendChart(txs) {
-      const monthly = {};
-      txs.forEach((t) => {
-        if (!t.date) return;
-        const key = t.date.slice(0, 7);
-        if (!monthly[key]) monthly[key] = { rev: 0, exp: 0 };
-        if (t.type === 'income') monthly[key].rev += Number(t.amount);
-        else monthly[key].exp += Number(t.amount);
-      });
-
-      const keys = Object.keys(monthly).sort();
-      const labels = keys.map((k) => {
-        const [y, m] = k.split('-');
-        return new Date(y, parseInt(m, 10) - 1, 1).toLocaleDateString('en-IN', { month: 'short' });
-      });
-
-      const revData = keys.map((k) => monthly[k].rev);
-      const expData = keys.map((k) => monthly[k].exp);
-
+    function renderCharts(txs) {
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       const textColor = isDark ? '#94a3b8' : '#64748b';
-      const gridColor = isDark ? '#334155' : '#e2e8f0';
+      const gridColor = isDark ? '#1e293b' : '#f1f5f9';
 
-      const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
-      if (trendInstance) trendInstance.destroy();
-
-      trendInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Revenue', data: revData, backgroundColor: '#059669', borderRadius: 4 },
-            { label: 'Expenses', data: expData, backgroundColor: '#2563eb', borderRadius: 4 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { grid: { display: false }, ticks: { color: textColor } },
-            y: { grid: { color: gridColor }, ticks: { color: textColor, callback: (v) => '₹' + (v >= 1000 ? v / 1000 + 'k' : v) } }
-          },
-          plugins: {
-            legend: { position: 'top', labels: { color: textColor, font: { family: "'Inter', sans-serif", size: 11 } } }
-          }
-        }
+      // 1. Monthly Trajectory
+      const monthlyData = {};
+      txs.forEach(t => {
+        const monthKey = t.date.substring(0, 7); // YYYY-MM
+        if (!monthlyData[monthKey]) monthlyData[monthKey] = { revenue: 0, expense: 0 };
+        if (t.type === 'income') monthlyData[monthKey].revenue += Number(t.amount);
+        else monthlyData[monthKey].expense += Number(t.amount);
       });
-    }
 
-    function onThemeChanged() {
-      fetchTransactions().then((txs) => renderDashboard(txs));
+      const sortedMonths = Object.keys(monthlyData).sort();
+      const labels = sortedMonths.map(m => {
+        const [y, mon] = m.split('-');
+        const date = new Date(y, parseInt(mon) - 1, 1);
+        return date.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+      });
+
+      const revDataset = sortedMonths.map(m => monthlyData[m].revenue);
+      const expDataset = sortedMonths.map(m => monthlyData[m].expense);
+
+      const trendCtx = document.getElementById('monthlyTrendChart')?.getContext('2d');
+      if (trendCtx) {
+        if (trendChartInstance) trendChartInstance.destroy();
+        trendChartInstance = new Chart(trendCtx, {
+          type: 'bar',
+          data: {
+            labels: labels.length > 0 ? labels : ['Current Month'],
+            datasets: [
+              {
+                label: 'Gross Revenue',
+                data: revDataset.length > 0 ? revDataset : [0],
+                backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                borderRadius: 6
+              },
+              {
+                label: 'Operating Expenses',
+                data: expDataset.length > 0 ? expDataset : [0],
+                backgroundColor: 'rgba(244, 63, 94, 0.85)',
+                borderRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor, font: { family: 'Inter', weight: '600' } } } },
+            scales: {
+              x: { grid: { color: gridColor }, ticks: { color: textColor } },
+              y: { grid: { color: gridColor }, ticks: { color: textColor, callback: (v) => '₹' + (v >= 1000 ? (v/1000) + 'k' : v) } }
+            }
+          }
+        });
+      }
+
+      // 2. Category Doughnut
+      const catMap = {};
+      txs.filter(t => t.type === 'expense').forEach(t => {
+        catMap[t.category] = (catMap[t.category] || 0) + Number(t.amount);
+      });
+
+      const catLabels = Object.keys(catMap);
+      const catValues = Object.values(catMap);
+      const palette = ['#6366f1', '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#14b8a6', '#eab308', '#ef4444', '#3b82f6'];
+
+      const doughCtx = document.getElementById('categoryDoughnutChart')?.getContext('2d');
+      if (doughCtx) {
+        if (doughnutChartInstance) doughnutChartInstance.destroy();
+        doughnutChartInstance = new Chart(doughCtx, {
+          type: 'doughnut',
+          data: {
+            labels: catLabels.length > 0 ? catLabels : ['No Expenses'],
+            datasets: [{
+              data: catValues.length > 0 ? catValues : [1],
+              backgroundColor: catValues.length > 0 ? palette.slice(0, catLabels.length) : ['#e2e8f0'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, color: textColor, font: { size: 11 } } }
+            }
+          }
+        });
+      }
     }
   </script>
 </body>

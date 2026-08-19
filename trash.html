@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Apex Business Finance — Archived & Deleted Transactions" />
+  <meta name="description" content="Apex Business Finance — Archived & Soft-Deleted Transactions" />
   <title>Archived Records — Apex Business Finance</title>
 
   <!-- Google Fonts -->
@@ -43,10 +43,10 @@
       </a>
       <a href="analytics.html" class="nav-link">
         <i class="fa-solid fa-chart-column"></i>
-        <span>Analytics & Costs</span>
+        <span>Analytics &amp; Costs</span>
       </a>
 
-      <span class="nav-section-title">Executive & Audit</span>
+      <span class="nav-section-title">Reports &amp; Tools</span>
       <a href="statements.html" class="nav-link">
         <i class="fa-solid fa-file-invoice-dollar"></i>
         <span>Financial Statement</span>
@@ -63,14 +63,20 @@
         <i class="fa-solid fa-sliders"></i>
         <span>Settings</span>
       </a>
+
+      <span class="nav-section-title">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Admin Command Hub</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Executive Admin</span>
-          <span class="user-role">Finance Controller</span>
+          <span class="user-name">Elena Rostova</span>
+          <span class="user-role">Finance Director • Management</span>
         </div>
       </div>
     </div>
@@ -86,12 +92,17 @@
           <i class="fa-solid fa-bars"></i>
         </button>
         <div class="page-heading">
-          <h1 class="page-title">Archived & Deleted Transactions</h1>
-          <span class="page-breadcrumb">Apex Business Finance / Immutable Deletion Archive</span>
+          <h1 class="page-title">Archived / Soft-Deleted Transactions</h1>
+          <span class="page-breadcrumb">Apex Business Finance / Deletion Archive &amp; Recovery</span>
         </div>
       </div>
 
       <div class="topbar-actions">
+        <a href="admin.html" class="admin-hub-link" title="Open Admin Portal">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin Portal</span>
+        </a>
+
         <span class="backend-badge" id="backendStatusBadge">
           <span class="status-dot"></span>
           <span id="backendStatusText">Checking storage...</span>
@@ -104,113 +115,218 @@
       </div>
     </header>
 
-    <!-- Page Body -->
-    <div class="page-body">
+    <!-- Content Body -->
+    <div class="app-content-body">
       
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Soft-Deleted Transaction Archive</h2>
-            <p class="card-subtitle">Deleted entries are permanently archived for audit compliance and can be restored anytime with one click.</p>
+      <!-- Policy Status Banner -->
+      <div class="policy-banner locked" id="trashPolicyBanner">
+        <div class="policy-info">
+          <div class="policy-icon" id="trashPolicyIcon">
+            <i class="fa-solid fa-lock"></i>
           </div>
-
-          <span class="badge badge-audit">
-            <i class="fa-solid fa-shield-halved"></i> Immutable Compliance Archive
-          </span>
+          <div class="policy-text-group">
+            <h4 class="policy-title" id="trashPolicyTitle">Immutable Audit Policy is Active</h4>
+            <p class="policy-desc" id="trashPolicyDesc">Deleted items are preserved in this soft-delete archive for audit compliance. Permanent purge can be enabled in the Admin Portal.</p>
+          </div>
         </div>
+        <div>
+          <button class="btn btn-danger-outline btn-sm" id="emptyTrashBtn" style="display: none;">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>Empty All Trash (Permanent Purge)</span>
+          </button>
+          <a href="admin.html" class="btn btn-outline btn-sm" id="managePolicyLink">
+            <i class="fa-solid fa-shield-halved"></i> Manage Policy
+          </a>
+        </div>
+      </div>
 
-        <div class="table-responsive">
-          <table class="corporate-table">
-            <thead>
-              <tr>
-                <th>Date Deleted</th>
-                <th>Original Date</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Classification</th>
-                <th class="text-right">Amount (INR)</th>
-                <th class="text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody id="trashTableBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+      <!-- Archive Table Card -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Soft-Deleted Transaction Archive</h3>
+            <p class="card-subtitle" id="archiveCountText">All archived items can be restored back to the active ledger with one click.</p>
+          </div>
+        </div>
+        <div class="content-card-body" style="padding: 0;">
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Submitted By</th>
+                  <th>Department</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Deleted At</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="trashTableBody">
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading deletion archive...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
     </div>
-
   </div>
 
-  <!-- Shared Engine Script -->
+  <!-- Shared JS & Trash Controller -->
   <script src="shared.js"></script>
-
-  <!-- Trash Page Controller -->
   <script>
+    let archivedRecords = [];
+    let currentPolicyState = { immutable_policy_enabled: true };
+
     document.addEventListener('DOMContentLoaded', async () => {
-      await loadArchivedRecords();
+      await refreshTrashPage();
     });
 
+    async function refreshTrashPage() {
+      currentPolicyState = await fetchPolicy();
+      updatePolicyUI(currentPolicyState.immutable_policy_enabled);
+      await loadArchivedRecords();
+    }
+
+    function updatePolicyUI(isLocked) {
+      const banner = document.getElementById('trashPolicyBanner');
+      const icon = document.getElementById('trashPolicyIcon');
+      const title = document.getElementById('trashPolicyTitle');
+      const desc = document.getElementById('trashPolicyDesc');
+      const emptyBtn = document.getElementById('emptyTrashBtn');
+
+      if (isLocked) {
+        banner.className = 'policy-banner locked';
+        icon.innerHTML = '<i class="fa-solid fa-lock"></i>';
+        title.textContent = 'Immutable Audit Policy is Active (Strict Compliance)';
+        desc.textContent = 'Deleted items are safely stored in this archive and can only be restored. Permanent database purge is blocked.';
+        if (emptyBtn) emptyBtn.style.display = 'none';
+      } else {
+        banner.className = 'policy-banner unlocked';
+        icon.innerHTML = '<i class="fa-solid fa-unlock-keyhole"></i>';
+        title.textContent = 'Immutable Policy is Disabled (Permanent Purge Permitted)';
+        desc.textContent = 'Administrators have enabled permanent purge mode. Records can be permanently erased from SQLite.';
+        if (emptyBtn) emptyBtn.style.display = 'inline-flex';
+      }
+    }
+
     async function loadArchivedRecords() {
+      const tbody = document.getElementById('trashTableBody');
+      if (!tbody) return;
+
       try {
         const res = await fetch(`${API_BASE}/api/admin/deleted`);
         const json = await res.json();
-        if (json.status === 'success') {
-          renderTrashTable(json.data);
+        archivedRecords = json.data || [];
+
+        document.getElementById('archiveCountText').textContent = `Total archived items: ${archivedRecords.length}`;
+
+        if (archivedRecords.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 3.5rem; color: var(--text-muted);">
+                <i class="fa-solid fa-box-open" style="font-size: 2.25rem; margin-bottom: 0.75rem; display: block; opacity: 0.4;"></i>
+                The deletion archive is empty.
+              </td>
+            </tr>
+          `;
           return;
         }
+
+        const isPolicyLocked = currentPolicyState.immutable_policy_enabled;
+
+        tbody.innerHTML = archivedRecords.map(t => {
+          const isIncome = t.type === 'income';
+          const initials = getInitials(t.user_name || 'Staff');
+          const color = t.avatar_color || '#8b5cf6';
+
+          return `
+            <tr>
+              <td>
+                <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(t.description)}</div>
+                <div style="font-size: 0.725rem; color: var(--text-muted);">ID: ${escapeHtml(t.id)}</div>
+              </td>
+              <td>
+                <div class="user-tag">
+                  <span class="user-mini-avatar" style="background-color: ${color};">${initials}</span>
+                  <span>${escapeHtml(t.user_name || 'Elena Rostova')}</span>
+                </div>
+              </td>
+              <td><span class="dept-pill">${escapeHtml(t.department || 'General')}</span></td>
+              <td style="color: var(--text-secondary);">${escapeHtml(t.category)}</td>
+              <td>
+                <span class="badge-amount ${isIncome ? 'income' : 'expense'}">
+                  ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
+                </span>
+              </td>
+              <td style="font-size: 0.8rem; color: var(--text-muted);">${t.deleted_at || 'Recently'}</td>
+              <td style="text-align: right; white-space: nowrap;">
+                <button class="btn btn-secondary btn-sm" onclick="handleRestoreTx('${t.id}')" title="Restore to active ledger">
+                  <i class="fa-solid fa-rotate-left"></i> Restore
+                </button>
+                ${!isPolicyLocked ? `
+                  <button class="btn btn-danger-outline btn-sm" onclick="handlePurgeTx('${t.id}')" title="Permanently delete from SQLite">
+                    <i class="fa-solid fa-trash-can"></i> Purge
+                  </button>
+                ` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
       } catch (e) {
-        console.warn('API error loading deleted records');
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--expense);">Error loading archive</td></tr>`;
       }
-
-      renderTrashTable([]);
     }
 
-    function renderTrashTable(deletedList) {
-      const tbody = document.getElementById('trashTableBody');
-      tbody.innerHTML = '';
-
-      if (deletedList.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">No archived deleted items. All records are active.</td></tr>';
-        return;
-      }
-
-      deletedList.forEach((t) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="color:var(--expense); font-weight:600; font-size:0.8rem;">${escapeHtml(t.deleted_at || 'Recently')}</td>
-          <td>${formatDate(t.date)}</td>
-          <td><strong>${escapeHtml(t.description)}</strong></td>
-          <td><span class="badge badge-audit">${escapeHtml(t.category)}</span></td>
-          <td><span class="badge ${t.type === 'income' ? 'badge-income' : 'badge-expense'}">${t.type.toUpperCase()}</span></td>
-          <td class="text-right" style="font-weight:700;">${formatCurrency(t.amount)}</td>
-          <td class="text-center">
-            <button class="btn btn-primary btn-sm" data-restore-id="${t.id}">
-              <i class="fa-solid fa-rotate-left"></i> Restore
-            </button>
-          </td>
-        `;
-
-        tr.querySelector('[data-restore-id]').addEventListener('click', async () => {
-          await restoreRecord(t.id, t.description);
-        });
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function restoreRecord(id, name) {
+    async function handleRestoreTx(id) {
+      const active = getActiveUser();
       try {
-        const res = await fetch(`${API_BASE}/api/admin/restore/${id}`, { method: 'POST' });
+        const res = await fetch(`${API_BASE}/api/admin/restore/${id}`, {
+          method: 'POST',
+          headers: { 'X-User-Name': active.name }
+        });
+        const json = await res.json();
         if (res.ok) {
-          showToast(`Restored "${name}" to active ledger`, 'success');
+          showToast(json.message, 'success');
           await loadArchivedRecords();
         }
       } catch (e) {
-        showToast('Error restoring transaction', 'error');
+        showToast(e.message, 'error');
       }
     }
+
+    async function handlePurgeTx(id) {
+      if (!confirm('Are you sure you want to permanently delete this record from the database? This cannot be recovered.')) return;
+      try {
+        const res = await permanentPurgeTransaction(id);
+        showToast(res.message, 'success');
+        await loadArchivedRecords();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    }
+
+    document.getElementById('emptyTrashBtn')?.addEventListener('click', async () => {
+      if (currentPolicyState.immutable_policy_enabled) {
+        showToast('Action blocked: Immutable Policy is active.', 'error');
+        return;
+      }
+
+      if (!confirm('🚨 PERMANENT WIPE: Are you sure you want to permanently purge all archived records?')) return;
+
+      try {
+        const res = await permanentPurgeAll();
+        showToast(res.message, 'success');
+        await loadArchivedRecords();
+      } catch (e) {
+        showToast(e.message, 'error');
+      }
+    });
   </script>
 </body>
 </html>

@@ -43,10 +43,10 @@
       </a>
       <a href="analytics.html" class="nav-link">
         <i class="fa-solid fa-chart-column"></i>
-        <span>Analytics & Costs</span>
+        <span>Analytics &amp; Costs</span>
       </a>
 
-      <span class="nav-section-title">Executive & Audit</span>
+      <span class="nav-section-title">Reports &amp; Tools</span>
       <a href="statements.html" class="nav-link">
         <i class="fa-solid fa-file-invoice-dollar"></i>
         <span>Financial Statement</span>
@@ -63,14 +63,20 @@
         <i class="fa-solid fa-sliders"></i>
         <span>Settings</span>
       </a>
+
+      <span class="nav-section-title">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Admin Command Hub</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Executive Admin</span>
-          <span class="user-role">Finance Controller</span>
+          <span class="user-name">Elena Rostova</span>
+          <span class="user-role">Finance Director • Management</span>
         </div>
       </div>
     </div>
@@ -96,6 +102,11 @@
           <i class="fa-solid fa-rotate"></i> Sync Logs
         </button>
 
+        <a href="admin.html" class="admin-hub-link" title="Open Admin Portal">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin Portal</span>
+        </a>
+
         <span class="backend-badge" id="backendStatusBadge">
           <span class="status-dot"></span>
           <span id="backendStatusText">Checking storage...</span>
@@ -108,120 +119,142 @@
       </div>
     </header>
 
-    <!-- Page Body -->
-    <div class="page-body">
+    <!-- Content Body -->
+    <div class="app-content-body">
       
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Chronological Activity Ledger</h2>
-            <p class="card-subtitle">Every creation, deletion, restoration, and reset is recorded with exact server timestamps.</p>
-          </div>
-
-          <div style="display:flex; gap:0.35rem; background:var(--bg-card-subtle); padding:0.25rem; border-radius:var(--radius-md); border:1px solid var(--border-color);">
-            <button class="btn btn-sm audit-filter active" data-action="ALL">All Events</button>
-            <button class="btn btn-sm audit-filter" data-action="CREATE">Created</button>
-            <button class="btn btn-sm audit-filter" data-action="DELETE">Deleted</button>
-            <button class="btn btn-sm audit-filter" data-action="RESTORE">Restored</button>
-            <button class="btn btn-sm audit-filter" data-action="RESET">Reset</button>
+      <!-- Search & Filter Card -->
+      <div class="content-card">
+        <div class="content-card-body" style="padding: 1.25rem 1.75rem;">
+          <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <div style="position: relative; flex: 1; min-width: 250px;">
+              <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+              <input type="text" id="logSearchInput" class="form-input" placeholder="Search by operator, action, transaction ID, or details..." style="padding-left: 2.25rem;" />
+            </div>
+            <div>
+              <select id="logActionFilter" class="form-select" style="width: auto;">
+                <option value="all">All Actions</option>
+                <option value="CREATE">CREATE</option>
+                <option value="DELETE">DELETE (Archive)</option>
+                <option value="RESTORE">RESTORE</option>
+                <option value="PERMANENT_PURGE">PURGE</option>
+                <option value="POLICY_TOGGLE">POLICY TOGGLE</option>
+                <option value="USER_UPDATE">USER UPDATE</option>
+              </select>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="table-responsive">
-          <table class="corporate-table">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Action</th>
-                <th>Transaction Reference</th>
-                <th>Event Description</th>
-                <th>Category</th>
-                <th class="text-right">Amount (INR)</th>
-              </tr>
-            </thead>
-            <tbody id="auditLogsBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+      <!-- Audit Logs Table Card -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Cryptographic Audit Trail</h3>
+            <p class="card-subtitle">Every operation is permanently logged with timestamp and operator attribution</p>
+          </div>
+        </div>
+        <div class="content-card-body" style="padding: 0;">
+          <div class="data-table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Operator</th>
+                  <th>Target ID</th>
+                  <th>Action Details</th>
+                </tr>
+              </thead>
+              <tbody id="auditLogsTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Loading audit logs...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
     </div>
-
   </div>
 
-  <!-- Shared Engine Script -->
+  <!-- Shared JS & Audit Controller -->
   <script src="shared.js"></script>
-
-  <!-- Audit Logs Controller -->
   <script>
-    let logsData = [];
+    let rawAuditLogs = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
-      setupAuditListeners();
-      await fetchAndRenderAuditLogs();
+      document.getElementById('refreshLogsBtn')?.addEventListener('click', loadLogs);
+      document.getElementById('logSearchInput')?.addEventListener('input', applyLogFilters);
+      document.getElementById('logActionFilter')?.addEventListener('change', applyLogFilters);
+      await loadLogs();
     });
 
-    async function fetchAndRenderAuditLogs() {
+    async function loadLogs() {
+      const tbody = document.getElementById('auditLogsTableBody');
       try {
         const res = await fetch(`${API_BASE}/api/admin/audit-logs`);
         const json = await res.json();
-        if (json.status === 'success') {
-          logsData = json.data;
-          renderAuditRows('ALL');
-          return;
-        }
+        rawAuditLogs = json.data || [];
+        applyLogFilters();
       } catch (e) {
-        console.warn('API error, using local audit mock');
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--expense);">Error loading logs</td></tr>`;
       }
-
-      logsData = [];
-      renderAuditRows('ALL');
     }
 
-    function renderAuditRows(filterAction) {
-      const tbody = document.getElementById('auditLogsBody');
-      tbody.innerHTML = '';
+    function applyLogFilters() {
+      const query = document.getElementById('logSearchInput').value.toLowerCase().trim();
+      const action = document.getElementById('logActionFilter').value;
 
-      const filtered = filterAction === 'ALL' ? logsData : logsData.filter((l) => l.action === filterAction);
+      const filtered = rawAuditLogs.filter(l => {
+        const matchesAction = action === 'all' || l.action === action;
+        const matchesQuery = !query ||
+          l.action.toLowerCase().includes(query) ||
+          (l.user_name && l.user_name.toLowerCase().includes(query)) ||
+          (l.transaction_id && l.transaction_id.toLowerCase().includes(query)) ||
+          JSON.stringify(l.details).toLowerCase().includes(query);
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2.5rem; color:var(--text-muted);">No audit log events found</td></tr>';
+        return matchesAction && matchesQuery;
+      });
+
+      renderLogs(filtered);
+    }
+
+    function renderLogs(logs) {
+      const tbody = document.getElementById('auditLogsTableBody');
+      if (!tbody) return;
+
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted);">No matching audit logs found.</td></tr>`;
         return;
       }
 
-      filtered.forEach((l) => {
-        const d = l.details || {};
-        const desc = d.description || (l.action === 'RESET' ? 'Full Active Data Reset' : 'System Event');
-        const cat = d.category || '—';
-        const amt = d.amount ? formatCurrency(d.amount) : '—';
+      tbody.innerHTML = logs.map(l => {
+        let actionBadgeColor = 'var(--primary)';
+        if (l.action === 'CREATE') actionBadgeColor = '#059669';
+        else if (l.action === 'DELETE') actionBadgeColor = '#e11d48';
+        else if (l.action === 'RESTORE') actionBadgeColor = '#8b5cf6';
+        else if (l.action === 'PERMANENT_PURGE' || l.action === 'PERMANENT_PURGE_ALL') actionBadgeColor = '#dc2626';
+        else if (l.action === 'POLICY_TOGGLE') actionBadgeColor = '#f59e0b';
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="white-space:nowrap; font-size:0.8rem; color:var(--text-muted);">${escapeHtml(l.timestamp || '')}</td>
-          <td><span class="badge-action ${l.action}">${escapeHtml(l.action)}</span></td>
-          <td style="font-family:monospace; font-size:0.75rem; color:var(--text-muted);">${escapeHtml(l.transaction_id || 'SYSTEM')}</td>
-          <td><strong>${escapeHtml(desc)}</strong></td>
-          <td>${escapeHtml(cat)}</td>
-          <td class="text-right" style="font-weight:700;">${amt}</td>
+        return `
+          <tr>
+            <td style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">${l.timestamp}</td>
+            <td>
+              <span style="font-size: 0.7rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; color: ${actionBadgeColor}; border: 1px solid ${actionBadgeColor};">
+                ${escapeHtml(l.action)}
+              </span>
+            </td>
+            <td style="font-weight: 600; font-size: 0.825rem;">${escapeHtml(l.user_name || 'Executive Admin')}</td>
+            <td style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(l.transaction_id || 'System')}</td>
+            <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 420px; word-break: break-word;">
+              ${escapeHtml(JSON.stringify(l.details))}
+            </td>
+          </tr>
         `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function setupAuditListeners() {
-      document.querySelectorAll('.audit-filter').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.audit-filter').forEach((b) => b.classList.remove('active', 'btn-primary'));
-          btn.classList.add('active', 'btn-primary');
-          renderAuditRows(btn.getAttribute('data-action'));
-        });
-      });
-
-      document.getElementById('refreshLogsBtn').addEventListener('click', async () => {
-        await fetchAndRenderAuditLogs();
-        showToast('Audit ledger synced from SQLite database', 'success');
-      });
+      }).join('');
     }
   </script>
 </body>

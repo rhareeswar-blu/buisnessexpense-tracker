@@ -43,10 +43,10 @@
       </a>
       <a href="analytics.html" class="nav-link">
         <i class="fa-solid fa-chart-column"></i>
-        <span>Analytics & Costs</span>
+        <span>Analytics &amp; Costs</span>
       </a>
 
-      <span class="nav-section-title">Executive & Audit</span>
+      <span class="nav-section-title">Reports &amp; Tools</span>
       <a href="statements.html" class="nav-link">
         <i class="fa-solid fa-file-invoice-dollar"></i>
         <span>Financial Statement</span>
@@ -63,14 +63,20 @@
         <i class="fa-solid fa-sliders"></i>
         <span>Settings</span>
       </a>
+
+      <span class="nav-section-title">Administration</span>
+      <a href="admin.html" class="nav-link admin-bridge-link">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Admin Command Hub</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
       <div class="sidebar-user">
-        <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+        <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
         <div class="user-details">
-          <span class="user-name">Executive Admin</span>
-          <span class="user-role">Finance Controller</span>
+          <span class="user-name">Elena Rostova</span>
+          <span class="user-role">Finance Director • Management</span>
         </div>
       </div>
     </div>
@@ -87,11 +93,16 @@
         </button>
         <div class="page-heading">
           <h1 class="page-title">Business Settings &amp; Configuration</h1>
-          <span class="page-breadcrumb">Apex Business Finance / Profile &amp; Preferences</span>
+          <span class="page-breadcrumb">Apex Business Finance / Profile &amp; Legal Entity</span>
         </div>
       </div>
 
       <div class="topbar-actions">
+        <a href="admin.html" class="admin-hub-link" title="Open Admin Portal">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Admin Portal</span>
+        </a>
+
         <span class="backend-badge" id="backendStatusBadge">
           <span class="status-dot"></span>
           <span id="backendStatusText">Checking storage...</span>
@@ -104,149 +115,96 @@
       </div>
     </header>
 
-    <!-- Page Body -->
-    <div class="page-body">
+    <!-- Content Body -->
+    <div class="app-content-body">
       
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;" class="settings-grid">
-        
-        <!-- Business Profile Form -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">Corporate Organization Profile</h2>
-              <p class="card-subtitle">These details will appear on official generated financial statements and reports.</p>
-            </div>
+      <!-- Company Legal Profile Card -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Corporate Entity Profile</h3>
+            <p class="card-subtitle">Legal details shown on official financial statements and invoices</p>
           </div>
-
-          <form id="profileForm" style="display:flex; flex-direction:column; gap:1.25rem;">
+        </div>
+        <div class="content-card-body">
+          <form id="profileForm" style="display: flex; flex-direction: column; gap: 1.25rem; max-width: 600px;">
             <div class="form-group">
-              <label for="companyNameInput" class="form-label">Company / Legal Business Name *</label>
-              <input type="text" id="companyNameInput" class="admin-input" required />
+              <label class="form-label" for="companyName">Legal Company Name:</label>
+              <input type="text" id="companyName" class="form-input" required />
             </div>
 
             <div class="form-group">
-              <label for="taxIdInput" class="form-label">GSTIN / Tax ID / Registration Number</label>
-              <input type="text" id="taxIdInput" class="admin-input" placeholder="e.g. GSTIN: 27AABCU9603R1ZN" />
+              <label class="form-label" for="taxId">GSTIN / Tax ID Number:</label>
+              <input type="text" id="taxId" class="form-input" placeholder="e.g. GSTIN: 27AABCU9603R1ZN" />
             </div>
 
             <div class="form-group">
-              <label for="fyInput" class="form-label">Financial Accounting Year</label>
-              <input type="text" id="fyInput" class="admin-input" value="2026-2027" />
+              <label class="form-label" for="financialYear">Active Financial Year:</label>
+              <input type="text" id="financialYear" class="form-input" value="2026-2027" />
             </div>
 
-            <button type="submit" class="btn btn-primary" style="align-self:flex-start;">
-              <i class="fa-solid fa-floppy-disk"></i> Save Profile Settings
-            </button>
+            <div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Save Profile Settings
+              </button>
+            </div>
           </form>
         </div>
+      </div>
 
-        <!-- Database Maintenance & Actions -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">Data Management &amp; Seed Controls</h2>
-              <p class="card-subtitle">Manage sample datasets and system resets</p>
-            </div>
+      <!-- Quick Link to Executive Security Settings -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <div class="card-title-group">
+            <h3 class="card-title">Security Policies &amp; Team Management</h3>
+            <p class="card-subtitle">Immutable Audit Policies and Team Roster controls are managed in the Executive Admin Command Center.</p>
           </div>
-
-          <div style="display:flex; flex-direction:column; gap:1.25rem;">
-            
-            <div style="padding:1rem; background:var(--bg-card-subtle); border:1px solid var(--border-color); border-radius:var(--radius-md);">
-              <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.35rem;">Load Demo Business Transactions</h3>
-              <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">Seed realistic business transactions (Retainers, AWS Cloud, Payroll, Office Rent) into the SQLite ledger.</p>
-              <button id="loadSampleBtn" class="btn btn-secondary btn-sm">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Populate Sample Dataset
-              </button>
-            </div>
-
-            <div style="padding:1rem; background:var(--expense-bg); border:1px solid var(--expense-border); border-radius:var(--radius-md);">
-              <h3 style="font-size:0.95rem; font-weight:700; color:var(--expense); margin-bottom:0.35rem;">Archive All Active Transactions</h3>
-              <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem;">Soft-deletes all active transactions and archives them into the audit ledger for compliance.</p>
-              <button id="resetAllBtn" class="btn btn-danger btn-sm">
-                <i class="fa-solid fa-box-archive"></i> Archive All Active Records
-              </button>
-            </div>
-
+          <div>
+            <a href="admin.html" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-shield-halved"></i> Launch Admin Portal
+            </a>
           </div>
         </div>
-
       </div>
 
     </div>
-
   </div>
 
-  <!-- Shared Engine Script -->
+  <!-- Shared JS & Settings Controller -->
   <script src="shared.js"></script>
-
-  <!-- Settings Page Controller -->
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      await loadSettings();
-      setupSettingsListeners();
+      await loadCurrentProfile();
+      setupProfileForm();
     });
 
-    async function loadSettings() {
+    async function loadCurrentProfile() {
       const p = await loadGlobalBusinessProfile();
-      document.getElementById('companyNameInput').value = p.company_name || '';
-      document.getElementById('taxIdInput').value = p.tax_id || '';
-      document.getElementById('fyInput').value = p.financial_year || '2026-2027';
+      document.getElementById('companyName').value = p.company_name || '';
+      document.getElementById('taxId').value = p.tax_id || '';
+      document.getElementById('financialYear').value = p.financial_year || '2026-2027';
     }
 
-    function setupSettingsListeners() {
-      document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    function setupProfileForm() {
+      document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const company_name = document.getElementById('companyNameInput').value.trim() || 'Apex Business Solutions Pvt. Ltd.';
-        const tax_id = document.getElementById('taxIdInput').value.trim();
-        const financial_year = document.getElementById('fyInput').value.trim() || '2026-2027';
-
-        const updatedProfile = { company_name, tax_id, financial_year };
+        const company_name = document.getElementById('companyName').value.trim();
+        const tax_id = document.getElementById('taxId').value.trim();
+        const financial_year = document.getElementById('financialYear').value.trim();
+        const active = getActiveUser();
 
         try {
           const res = await fetch(`${API_BASE}/api/business-profile`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedProfile),
-            signal: AbortSignal.timeout(2000)
+            headers: { 'Content-Type': 'application/json', 'X-User-Name': active.name },
+            body: JSON.stringify({ company_name, tax_id, financial_year, operator_user: active.name })
           });
           if (res.ok) {
-            showToast('Business profile updated in SQLite ledger', 'success');
-          } else {
-            showToast('Profile updated locally', 'info');
+            showToast('Corporate profile updated successfully', 'success');
+            await loadGlobalBusinessProfile();
           }
         } catch (err) {
-          showToast('Profile saved in local storage mode', 'info');
-        }
-
-        localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(updatedProfile));
-        applyProfileToUI(updatedProfile);
-      });
-
-      document.getElementById('loadSampleBtn').addEventListener('click', async () => {
-        try {
-          const res = await fetch(`${API_BASE}/api/sample-data`, { method: 'POST', signal: AbortSignal.timeout(2000) });
-          if (res.ok) {
-            showToast('Sample dataset loaded into SQLite database', 'success');
-            return;
-          }
-        } catch (e) {}
-
-        localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(DEFAULT_SAMPLE_DATA));
-        showToast('Sample dataset reloaded into local storage', 'success');
-      });
-
-      document.getElementById('resetAllBtn').addEventListener('click', async () => {
-        if (confirm('Archive all active records into the corporate audit ledger?')) {
-          try {
-            const res = await fetch(`${API_BASE}/api/reset`, { method: 'POST', signal: AbortSignal.timeout(2000) });
-            if (res.ok) {
-              showToast('All active records archived into audit ledger', 'info');
-              return;
-            }
-          } catch (e) {}
-
-          localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify([]));
-          showToast('Active records archived locally', 'info');
+          showToast('Error saving settings', 'error');
         }
       });
     }
